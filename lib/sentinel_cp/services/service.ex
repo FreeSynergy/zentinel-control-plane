@@ -42,6 +42,8 @@ defmodule SentinelCp.Services.Service do
     belongs_to :auth_policy, SentinelCp.Services.AuthPolicy
     belongs_to :openapi_spec, SentinelCp.Services.OpenApiSpec
 
+    has_many :service_middlewares, SentinelCp.Services.ServiceMiddleware
+
     field :openapi_path, :string
 
     timestamps(type: :utc_datetime)

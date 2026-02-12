@@ -23,7 +23,15 @@ defmodule SentinelCp.Services.KdlGenerator do
       upstream_groups = Services.list_upstream_groups(project_id)
       certificates = Services.list_certificates(project_id)
       auth_policies = Services.list_auth_policies(project_id)
-      kdl = build_kdl(services, config, upstream_groups, certificates, auth_policies)
+
+      # Build middleware chain map: service_id -> [service_middlewares]
+      middleware_chains =
+        services
+        |> Enum.into(%{}, fn s ->
+          {s.id, Services.list_service_middlewares(s.id)}
+        end)
+
+      kdl = build_kdl(services, config, upstream_groups, certificates, auth_policies, middleware_chains)
       {:ok, kdl}
     end
   end
@@ -32,7 +40,7 @@ defmodule SentinelCp.Services.KdlGenerator do
   Generates KDL from provided services, config, and upstream groups (no DB access).
   Useful for testing.
   """
-  def build_kdl(services, %ProjectConfig{} = config, upstream_groups \\ [], certificates \\ [], auth_policies \\ []) do
+  def build_kdl(services, %ProjectConfig{} = config, upstream_groups \\ [], certificates \\ [], auth_policies \\ [], middleware_chains \\ %{}) do
     # Build lookup maps
     group_map =
       upstream_groups
@@ -63,7 +71,7 @@ defmodule SentinelCp.Services.KdlGenerator do
       "",
       build_tls_certificates(used_certs),
       build_upstream_groups(upstream_groups),
-      build_routes(services, group_map, cert_map, auth_policy_map),
+      build_routes(services, group_map, cert_map, auth_policy_map, middleware_chains),
       build_rate_limits(services)
     ]
 
@@ -146,16 +154,19 @@ defmodule SentinelCp.Services.KdlGenerator do
     lines ++ ["    }"]
   end
 
-  defp build_routes(services, group_map, cert_map, auth_policy_map) do
+  defp build_routes(services, group_map, cert_map, auth_policy_map, middleware_chains) do
     route_blocks =
       services
-      |> Enum.map(&build_route(&1, group_map, cert_map, auth_policy_map))
+      |> Enum.map(fn service ->
+        chain = Map.get(middleware_chains, service.id, [])
+        build_route(service, group_map, cert_map, auth_policy_map, chain)
+      end)
       |> Enum.intersperse([""])
 
     ["routes {"] ++ List.flatten(route_blocks) ++ ["}"]
   end
 
-  defp build_route(%Service{} = service, group_map, cert_map, auth_policy_map) do
+  defp build_route(%Service{} = service, group_map, cert_map, auth_policy_map, middleware_chain) do
     lines = ["    route #{inspect(service.route_path)} {"]
 
     lines =
@@ -197,6 +208,9 @@ defmodule SentinelCp.Services.KdlGenerator do
     lines = lines ++ build_request_transform_block(service.request_transform)
     lines = lines ++ build_response_transform_block(service.response_transform)
     lines = lines ++ build_traffic_split_block(service.traffic_split, group_map)
+
+    # Append middleware chain blocks (after inline fields)
+    lines = lines ++ build_middleware_chain(middleware_chain)
 
     lines ++ ["    }"]
   end
@@ -398,6 +412,58 @@ defmodule SentinelCp.Services.KdlGenerator do
     case Map.get(group_map, group_id) do
       nil -> group_id
       group -> group.slug
+    end
+  end
+
+  defp build_middleware_chain([]), do: []
+
+  defp build_middleware_chain(service_middlewares) do
+    service_middlewares
+    |> Enum.filter(fn sm -> sm.enabled end)
+    |> Enum.sort_by(fn sm -> sm.position end)
+    |> Enum.flat_map(&build_middleware_block/1)
+  end
+
+  defp build_middleware_block(service_middleware) do
+    middleware = service_middleware.middleware
+
+    # Skip disabled middleware definitions
+    unless middleware.enabled do
+      []
+    else
+      merged_config = Map.merge(middleware.config || %{}, service_middleware.config_override || %{})
+
+      case middleware.middleware_type do
+        "auth" ->
+          build_middleware_auth_block(merged_config)
+
+        "custom" ->
+          block_name = Map.get(merged_config, "kdl_block_name", "custom")
+          config = Map.drop(merged_config, ["kdl_block_name"])
+          build_nested_map_block(config, block_name, "        ")
+
+        type ->
+          build_nested_map_block(merged_config, type, "        ")
+      end
+    end
+  end
+
+  defp build_middleware_auth_block(config) do
+    auth_type = Map.get(config, "type", Map.get(config, "auth_type"))
+    rest = Map.drop(config, ["type", "auth_type"])
+
+    if auth_type do
+      lines = ["        auth {"]
+      lines = lines ++ ["            type #{inspect(auth_type)}"]
+
+      config_lines =
+        rest
+        |> Enum.sort_by(fn {k, _} -> k end)
+        |> Enum.map(fn {key, value} -> "            #{key} #{format_value(value)}" end)
+
+      lines ++ config_lines ++ ["        }"]
+    else
+      build_nested_map_block(config, "auth", "        ")
     end
   end
 

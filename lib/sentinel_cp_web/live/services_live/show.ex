@@ -17,6 +17,9 @@ defmodule SentinelCpWeb.ServicesLive.Show do
       auth_policy =
         if service.auth_policy_id, do: Services.get_auth_policy(service.auth_policy_id), else: nil
 
+      middleware_chain = Services.list_service_middlewares(service.id)
+      available_middlewares = Services.list_middlewares(project.id)
+
       {:ok,
        assign(socket,
          page_title: "Service #{service.name} — #{project.name}",
@@ -24,6 +27,8 @@ defmodule SentinelCpWeb.ServicesLive.Show do
          project: project,
          service: service,
          auth_policy: auth_policy,
+         middleware_chain: middleware_chain,
+         available_middlewares: available_middlewares,
          kdl_preview: kdl_preview
        )}
     else
@@ -51,6 +56,56 @@ defmodule SentinelCpWeb.ServicesLive.Show do
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Could not delete service.")}
+    end
+  end
+
+  @impl true
+  def handle_event("attach_middleware", %{"middleware_id" => mw_id}, socket) do
+    service = socket.assigns.service
+    project = socket.assigns.project
+    chain = socket.assigns.middleware_chain
+    next_position = if chain == [], do: 0, else: (Enum.max_by(chain, & &1.position).position + 1)
+
+    case Services.attach_middleware(%{
+           service_id: service.id,
+           middleware_id: mw_id,
+           position: next_position
+         }) do
+      {:ok, _} ->
+        Audit.log_user_action(socket.assigns.current_user, "attach", "service_middleware", service.id,
+          project_id: project.id
+        )
+
+        middleware_chain = Services.list_service_middlewares(service.id)
+        {:noreply, assign(socket, middleware_chain: middleware_chain) |> put_flash(:info, "Middleware attached.")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Could not attach middleware.")}
+    end
+  end
+
+  @impl true
+  def handle_event("detach_middleware", %{"id" => sm_id}, socket) do
+    project = socket.assigns.project
+    service = socket.assigns.service
+
+    case Services.get_service_middleware(sm_id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, "Service middleware not found.")}
+
+      sm ->
+        case Services.detach_middleware(sm) do
+          {:ok, _} ->
+            Audit.log_user_action(socket.assigns.current_user, "detach", "service_middleware", service.id,
+              project_id: project.id
+            )
+
+            middleware_chain = Services.list_service_middlewares(service.id)
+            {:noreply, assign(socket, middleware_chain: middleware_chain) |> put_flash(:info, "Middleware detached.")}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, "Could not detach middleware.")}
+        end
     end
   end
 
@@ -136,6 +191,63 @@ defmodule SentinelCpWeb.ServicesLive.Show do
             <:item label="Traffic Split">{format_traffic_split(@service.traffic_split)}</:item>
           </.definition_list>
         </.k8s_section>
+
+        <div class="lg:col-span-2">
+          <.k8s_section title="Middleware Chain">
+            <div class="flex items-center justify-between mb-3">
+              <p class="text-xs text-base-content/50">Middleware applied in position order after inline fields.</p>
+              <form phx-submit="attach_middleware" class="flex gap-2 items-center">
+                <select name="middleware_id" class="select select-bordered select-xs">
+                  <option value="">Attach middleware...</option>
+                  <option :for={mw <- @available_middlewares} value={mw.id}>{mw.name} ({mw.middleware_type})</option>
+                </select>
+                <button type="submit" class="btn btn-outline btn-xs">Attach</button>
+              </form>
+            </div>
+
+            <table :if={@middleware_chain != []} class="table table-sm">
+              <thead>
+                <tr>
+                  <th class="text-xs w-16">Position</th>
+                  <th class="text-xs">Name</th>
+                  <th class="text-xs">Type</th>
+                  <th class="text-xs">Enabled</th>
+                  <th class="text-xs">Override</th>
+                  <th class="text-xs"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr :for={sm <- @middleware_chain}>
+                  <td class="font-mono text-sm">{sm.position + 1}</td>
+                  <td>{sm.middleware.name}</td>
+                  <td><span class="badge badge-sm badge-outline">{sm.middleware.middleware_type}</span></td>
+                  <td>
+                    <span class={["badge badge-xs", (sm.enabled && "badge-success") || "badge-ghost"]}>
+                      {if sm.enabled, do: "yes", else: "no"}
+                    </span>
+                  </td>
+                  <td class="text-sm font-mono">
+                    {if sm.config_override == %{}, do: "—", else: inspect(sm.config_override)}
+                  </td>
+                  <td>
+                    <button
+                      phx-click="detach_middleware"
+                      phx-value-id={sm.id}
+                      data-confirm="Detach this middleware?"
+                      class="btn btn-ghost btn-xs text-error"
+                    >
+                      Detach
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div :if={@middleware_chain == []} class="text-center py-4 text-base-content/50 text-sm">
+              No middleware attached. Use the dropdown above to attach middleware from the library.
+            </div>
+          </.k8s_section>
+        </div>
 
         <div class="lg:col-span-2">
           <.k8s_section title="KDL Preview">

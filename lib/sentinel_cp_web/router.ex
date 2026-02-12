@@ -152,6 +152,10 @@ defmodule SentinelCpWeb.Router do
     live "/projects/:project_slug/auth-policies/new", AuthPoliciesLive.New, :new
     live "/projects/:project_slug/auth-policies/:id", AuthPoliciesLive.Show, :show
     live "/projects/:project_slug/auth-policies/:id/edit", AuthPoliciesLive.Edit, :edit
+    live "/projects/:project_slug/middlewares", MiddlewaresLive.Index, :index
+    live "/projects/:project_slug/middlewares/new", MiddlewaresLive.New, :new
+    live "/projects/:project_slug/middlewares/:id", MiddlewaresLive.Show, :show
+    live "/projects/:project_slug/middlewares/:id/edit", MiddlewaresLive.Edit, :edit
     live "/projects/:project_slug/analytics", AnalyticsLive.Index, :index
     live "/projects/:project_slug/analytics/services/:service_id", AnalyticsLive.Service, :show
     live "/projects/:project_slug/openapi/import", OpenApiLive.Import, :import
@@ -243,6 +247,22 @@ defmodule SentinelCpWeb.Router do
 
     live "/orgs/:org_slug/projects/:project_slug/auth-policies/:id/edit",
          AuthPoliciesLive.Edit,
+         :edit
+
+    live "/orgs/:org_slug/projects/:project_slug/middlewares",
+         MiddlewaresLive.Index,
+         :index
+
+    live "/orgs/:org_slug/projects/:project_slug/middlewares/new",
+         MiddlewaresLive.New,
+         :new
+
+    live "/orgs/:org_slug/projects/:project_slug/middlewares/:id",
+         MiddlewaresLive.Show,
+         :show
+
+    live "/orgs/:org_slug/projects/:project_slug/middlewares/:id/edit",
+         MiddlewaresLive.Edit,
          :edit
 
     live "/orgs/:org_slug/projects/:project_slug/analytics",
@@ -394,6 +414,10 @@ defmodule SentinelCpWeb.Router do
       get "/auth-policies", AuthPolicyController, :index
       get "/auth-policies/:id", AuthPolicyController, :show
 
+      get "/middlewares", MiddlewareController, :index
+      get "/middlewares/:id", MiddlewareController, :show
+      get "/services/:id/middlewares", MiddlewareController, :service_index
+
       get "/service-templates", TemplateController, :index
       get "/service-templates/:id", TemplateController, :show
 
@@ -431,6 +455,14 @@ defmodule SentinelCpWeb.Router do
       post "/auth-policies", AuthPolicyController, :create
       put "/auth-policies/:id", AuthPolicyController, :update
       delete "/auth-policies/:id", AuthPolicyController, :delete
+
+      post "/middlewares", MiddlewareController, :create
+      put "/middlewares/:id", MiddlewareController, :update
+      delete "/middlewares/:id", MiddlewareController, :delete
+      post "/services/:id/middlewares", MiddlewareController, :attach
+      put "/services/:id/middlewares/reorder", MiddlewareController, :reorder
+      put "/services/:id/middlewares/:middleware_id", MiddlewareController, :update_attachment
+      delete "/services/:id/middlewares/:middleware_id", MiddlewareController, :detach
 
       post "/service-templates", TemplateController, :create
       put "/service-templates/:id", TemplateController, :update

@@ -8,7 +8,7 @@ defmodule SentinelCp.Services do
 
   import Ecto.Query, warn: false
   alias SentinelCp.Repo
-  alias SentinelCp.Services.{Service, ServiceTemplate, ProjectConfig, UpstreamGroup, UpstreamTarget, Certificate, AuthPolicy, OpenApiSpec, DiscoverySource, DiscoverySync}
+  alias SentinelCp.Services.{Service, ServiceTemplate, ProjectConfig, UpstreamGroup, UpstreamTarget, Certificate, AuthPolicy, OpenApiSpec, DiscoverySource, DiscoverySync, Middleware, ServiceMiddleware}
 
   ## Services
 
@@ -611,6 +611,141 @@ defmodule SentinelCp.Services do
 
         {:error, error_msg}
     end
+  end
+
+  ## Middlewares
+
+  @doc """
+  Lists middlewares for a project, ordered by name.
+  """
+  def list_middlewares(project_id) do
+    from(m in Middleware,
+      where: m.project_id == ^project_id,
+      order_by: [asc: m.name]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Lists middlewares for a project filtered by type.
+  """
+  def list_middlewares_by_type(project_id, type) do
+    from(m in Middleware,
+      where: m.project_id == ^project_id and m.middleware_type == ^type,
+      order_by: [asc: m.name]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single middleware by ID.
+  """
+  def get_middleware(id), do: Repo.get(Middleware, id)
+
+  @doc """
+  Gets a single middleware by ID, raises if not found.
+  """
+  def get_middleware!(id), do: Repo.get!(Middleware, id)
+
+  @doc """
+  Creates a middleware.
+  """
+  def create_middleware(attrs) do
+    %Middleware{}
+    |> Middleware.create_changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a middleware.
+  """
+  def update_middleware(%Middleware{} = middleware, attrs) do
+    middleware
+    |> Middleware.update_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a middleware. Cascades to service_middlewares.
+  """
+  def delete_middleware(%Middleware{} = middleware) do
+    Repo.delete(middleware)
+  end
+
+  ## Service Middleware Chain
+
+  @doc """
+  Lists service middlewares for a service, ordered by position, preloading middleware.
+  """
+  def list_service_middlewares(service_id) do
+    from(sm in ServiceMiddleware,
+      where: sm.service_id == ^service_id,
+      order_by: [asc: sm.position],
+      preload: [:middleware]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Attaches a middleware to a service.
+  """
+  def attach_middleware(attrs) do
+    %ServiceMiddleware{}
+    |> ServiceMiddleware.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Detaches a middleware from a service.
+  """
+  def detach_middleware(%ServiceMiddleware{} = sm) do
+    Repo.delete(sm)
+  end
+
+  @doc """
+  Gets a service middleware by ID.
+  """
+  def get_service_middleware(id) do
+    ServiceMiddleware
+    |> Repo.get(id)
+    |> Repo.preload(:middleware)
+  end
+
+  @doc """
+  Gets a service middleware by service_id and middleware_id.
+  """
+  def get_service_middleware_by(service_id, middleware_id) do
+    from(sm in ServiceMiddleware,
+      where: sm.service_id == ^service_id and sm.middleware_id == ^middleware_id
+    )
+    |> Repo.one()
+  end
+
+  @doc """
+  Updates a service middleware (position, enabled, config_override).
+  """
+  def update_service_middleware(%ServiceMiddleware{} = sm, attrs) do
+    sm
+    |> ServiceMiddleware.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Batch updates service middleware positions.
+
+  Accepts a list of `{service_middleware_id, position}` tuples.
+  """
+  def reorder_service_middlewares(service_id, id_position_pairs) do
+    Repo.transaction(fn ->
+      for {id, position} <- id_position_pairs do
+        from(sm in ServiceMiddleware,
+          where: sm.id == ^id and sm.service_id == ^service_id
+        )
+        |> Repo.update_all(set: [position: position])
+      end
+
+      :ok
+    end)
   end
 
   defp dns_resolver do
