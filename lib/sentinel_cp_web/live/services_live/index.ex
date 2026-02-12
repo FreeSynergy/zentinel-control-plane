@@ -172,6 +172,9 @@ defmodule SentinelCpWeb.ServicesLive.Index do
           <button phx-click="show_generate" class="btn btn-outline btn-sm">
             Generate Bundle
           </button>
+          <.link navigate={openapi_import_path(@org, @project)} class="btn btn-outline btn-sm">
+            Import from OpenAPI
+          </.link>
           <.link navigate={service_new_path(@org, @project)} class="btn btn-primary btn-sm">
             New Service
           </.link>
@@ -317,6 +320,12 @@ defmodule SentinelCpWeb.ServicesLive.Index do
 
   defp resolve_org(%{"org_slug" => slug}), do: Orgs.get_org_by_slug(slug)
   defp resolve_org(_), do: nil
+
+  defp openapi_import_path(%{slug: org_slug}, project),
+    do: ~p"/orgs/#{org_slug}/projects/#{project.slug}/openapi/import"
+
+  defp openapi_import_path(nil, project),
+    do: ~p"/projects/#{project.slug}/openapi/import"
 
   defp service_new_path(%{slug: org_slug}, project),
     do: ~p"/orgs/#{org_slug}/projects/#{project.slug}/services/new"

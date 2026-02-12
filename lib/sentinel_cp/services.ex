@@ -8,7 +8,7 @@ defmodule SentinelCp.Services do
 
   import Ecto.Query, warn: false
   alias SentinelCp.Repo
-  alias SentinelCp.Services.{Service, ServiceTemplate, ProjectConfig, UpstreamGroup, UpstreamTarget, Certificate, AuthPolicy}
+  alias SentinelCp.Services.{Service, ServiceTemplate, ProjectConfig, UpstreamGroup, UpstreamTarget, Certificate, AuthPolicy, OpenApiSpec}
 
   ## Services
 
@@ -375,4 +375,120 @@ defmodule SentinelCp.Services do
   def delete_template(%ServiceTemplate{} = template) do
     Repo.delete(template)
   end
+
+  ## OpenAPI Specs
+
+  @doc """
+  Lists OpenAPI specs for a project, most recent first.
+  """
+  def list_openapi_specs(project_id) do
+    from(s in OpenApiSpec,
+      where: s.project_id == ^project_id,
+      order_by: [desc: s.inserted_at]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single OpenAPI spec by ID.
+  """
+  def get_openapi_spec(id), do: Repo.get(OpenApiSpec, id)
+
+  @doc """
+  Gets a single OpenAPI spec by ID, raises if not found.
+  """
+  def get_openapi_spec!(id), do: Repo.get!(OpenApiSpec, id)
+
+  @doc """
+  Creates an OpenAPI spec record.
+  """
+  def create_openapi_spec(attrs) do
+    %OpenApiSpec{}
+    |> OpenApiSpec.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Deletes an OpenAPI spec.
+  """
+  def delete_openapi_spec(%OpenApiSpec{} = spec) do
+    Repo.delete(spec)
+  end
+
+  @doc """
+  Finds an OpenAPI spec by checksum within a project, for dedup on re-upload.
+  """
+  def get_openapi_spec_by_checksum(project_id, checksum) do
+    from(s in OpenApiSpec,
+      where: s.project_id == ^project_id and s.checksum == ^checksum
+    )
+    |> Repo.one()
+  end
+
+  @doc """
+  Imports services (and optionally auth policies) from an OpenAPI spec.
+
+  Runs in a transaction: creates auth policies first, then services with
+  spec linkage and resolved auth_policy_ids.
+  """
+  def import_from_openapi(project_id, spec_id, selected_services, opts \\ []) do
+    import_auth = Keyword.get(opts, :import_auth_policies, false)
+    auth_policy_attrs = Keyword.get(opts, :auth_policy_attrs, [])
+
+    Repo.transaction(fn ->
+      # Create auth policies if requested
+      policy_map =
+        if import_auth do
+          auth_policy_attrs
+          |> Enum.reduce(%{}, fn attrs, acc ->
+            attrs_with_project = Map.put(attrs, :project_id, project_id)
+
+            case create_auth_policy(attrs_with_project) do
+              {:ok, policy} -> Map.put(acc, attrs.name, policy.id)
+              {:error, changeset} -> Repo.rollback({:auth_policy_error, changeset})
+            end
+          end)
+        else
+          %{}
+        end
+
+      # Create services
+      services =
+        Enum.map(selected_services, fn svc_attrs ->
+          auth_policy_id = resolve_auth_policy_id(svc_attrs, policy_map)
+
+          attrs =
+            %{
+              name: svc_attrs.name,
+              route_path: svc_attrs.route_path,
+              upstream_url: svc_attrs.upstream_url,
+              description: svc_attrs[:description],
+              openapi_spec_id: spec_id,
+              openapi_path: svc_attrs.openapi_path,
+              project_id: project_id
+            }
+            |> maybe_put(:auth_policy_id, auth_policy_id)
+
+          case create_service(attrs) do
+            {:ok, service} -> service
+            {:error, changeset} -> Repo.rollback({:service_error, changeset})
+          end
+        end)
+
+      %{
+        services: services,
+        services_count: length(services),
+        auth_policies_count: map_size(policy_map)
+      }
+    end)
+  end
+
+  defp resolve_auth_policy_id(%{security_refs: refs}, policy_map) when is_list(refs) do
+    Enum.find_value(refs, fn ref -> Map.get(policy_map, ref) end)
+  end
+
+  defp resolve_auth_policy_id(_, _), do: nil
+
+  defp maybe_put(map, _key, nil), do: map
+  defp maybe_put(map, key, value), do: Map.put(map, key, value)
 end

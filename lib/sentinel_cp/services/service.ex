@@ -40,6 +40,9 @@ defmodule SentinelCp.Services.Service do
     belongs_to :upstream_group, SentinelCp.Services.UpstreamGroup
     belongs_to :certificate, SentinelCp.Services.Certificate
     belongs_to :auth_policy, SentinelCp.Services.AuthPolicy
+    belongs_to :openapi_spec, SentinelCp.Services.OpenApiSpec
+
+    field :openapi_path, :string
 
     timestamps(type: :utc_datetime)
   end
@@ -73,6 +76,8 @@ defmodule SentinelCp.Services.Service do
       :upstream_group_id,
       :certificate_id,
       :auth_policy_id,
+      :openapi_spec_id,
+      :openapi_path,
       :project_id
     ])
     |> validate_required([:name, :route_path, :project_id])
@@ -113,7 +118,9 @@ defmodule SentinelCp.Services.Service do
       :redirect_url,
       :upstream_group_id,
       :certificate_id,
-      :auth_policy_id
+      :auth_policy_id,
+      :openapi_spec_id,
+      :openapi_path
     ])
     |> validate_required([:name, :route_path])
     |> validate_length(:name, min: 1, max: 100)

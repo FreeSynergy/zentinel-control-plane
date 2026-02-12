@@ -154,6 +154,7 @@ defmodule SentinelCpWeb.Router do
     live "/projects/:project_slug/auth-policies/:id/edit", AuthPoliciesLive.Edit, :edit
     live "/projects/:project_slug/analytics", AnalyticsLive.Index, :index
     live "/projects/:project_slug/analytics/services/:service_id", AnalyticsLive.Service, :show
+    live "/projects/:project_slug/openapi/import", OpenApiLive.Import, :import
 
     # Org-scoped dashboard
     live "/orgs/:org_slug/dashboard", DashboardLive.Index, :index
@@ -251,6 +252,10 @@ defmodule SentinelCpWeb.Router do
     live "/orgs/:org_slug/projects/:project_slug/analytics/services/:service_id",
          AnalyticsLive.Service,
          :show
+
+    live "/orgs/:org_slug/projects/:project_slug/openapi/import",
+         OpenApiLive.Import,
+         :import
   end
 
   # Admin-only browser routes
@@ -390,6 +395,9 @@ defmodule SentinelCpWeb.Router do
 
       get "/service-templates", TemplateController, :index
       get "/service-templates/:id", TemplateController, :show
+
+      get "/openapi/specs", OpenApiImportController, :index
+      get "/openapi/specs/:id", OpenApiImportController, :show
     end
   end
 
@@ -422,6 +430,10 @@ defmodule SentinelCpWeb.Router do
       post "/service-templates", TemplateController, :create
       put "/service-templates/:id", TemplateController, :update
       delete "/service-templates/:id", TemplateController, :delete
+
+      post "/openapi/preview", OpenApiImportController, :preview
+      post "/openapi/import", OpenApiImportController, :import
+      delete "/openapi/specs/:id", OpenApiImportController, :delete
     end
   end
 
