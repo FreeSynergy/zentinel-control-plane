@@ -26,6 +26,21 @@ defmodule SentinelCp.ServicesFixtures do
     service
   end
 
+  def redirect_service_fixture(attrs \\ %{}) do
+    project = attrs[:project] || SentinelCp.ProjectsFixtures.project_fixture()
+
+    {:ok, service} =
+      SentinelCp.Services.create_service(%{
+        name: attrs[:name] || unique_service_name(),
+        description: attrs[:description] || "A redirect service",
+        route_path: attrs[:route_path] || "/old/*",
+        redirect_url: attrs[:redirect_url] || "https://new.example.com",
+        project_id: project.id
+      })
+
+    service
+  end
+
   def static_service_fixture(attrs \\ %{}) do
     project = attrs[:project] || SentinelCp.ProjectsFixtures.project_fixture()
 

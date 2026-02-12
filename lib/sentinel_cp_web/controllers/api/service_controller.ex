@@ -291,6 +291,13 @@ defmodule SentinelCpWeb.Api.ServiceController do
       rate_limit: service.rate_limit,
       health_check: service.health_check,
       headers: service.headers,
+      cors: service.cors,
+      access_control: service.access_control,
+      compression: service.compression,
+      path_rewrite: service.path_rewrite,
+      redirect_url: service.redirect_url,
+      upstream_group_id: service.upstream_group_id,
+      certificate_id: service.certificate_id,
       project_id: service.project_id,
       inserted_at: service.inserted_at,
       updated_at: service.updated_at

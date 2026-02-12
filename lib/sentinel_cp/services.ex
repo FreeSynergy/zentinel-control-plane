@@ -8,7 +8,7 @@ defmodule SentinelCp.Services do
 
   import Ecto.Query, warn: false
   alias SentinelCp.Repo
-  alias SentinelCp.Services.{Service, ProjectConfig}
+  alias SentinelCp.Services.{Service, ProjectConfig, UpstreamGroup, UpstreamTarget, Certificate}
 
   ## Services
 
@@ -115,5 +115,165 @@ defmodule SentinelCp.Services do
     config
     |> ProjectConfig.changeset(attrs)
     |> Repo.update()
+  end
+
+  ## Upstream Groups
+
+  @doc """
+  Lists upstream groups for a project, preloading targets.
+  """
+  def list_upstream_groups(project_id) do
+    from(g in UpstreamGroup,
+      where: g.project_id == ^project_id,
+      order_by: [asc: g.name],
+      preload: [:targets]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single upstream group by ID, preloading targets.
+  """
+  def get_upstream_group(id) do
+    UpstreamGroup
+    |> Repo.get(id)
+    |> Repo.preload(:targets)
+  end
+
+  @doc """
+  Gets a single upstream group by ID, raises if not found.
+  """
+  def get_upstream_group!(id) do
+    UpstreamGroup
+    |> Repo.get!(id)
+    |> Repo.preload(:targets)
+  end
+
+  @doc """
+  Creates an upstream group.
+  """
+  def create_upstream_group(attrs) do
+    %UpstreamGroup{}
+    |> UpstreamGroup.create_changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates an upstream group.
+  """
+  def update_upstream_group(%UpstreamGroup{} = group, attrs) do
+    group
+    |> UpstreamGroup.update_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes an upstream group.
+  """
+  def delete_upstream_group(%UpstreamGroup{} = group) do
+    Repo.delete(group)
+  end
+
+  @doc """
+  Adds a target to an upstream group.
+  """
+  def add_upstream_target(attrs) do
+    %UpstreamTarget{}
+    |> UpstreamTarget.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates an upstream target.
+  """
+  def update_upstream_target(%UpstreamTarget{} = target, attrs) do
+    target
+    |> UpstreamTarget.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Gets an upstream target by ID.
+  """
+  def get_upstream_target(id), do: Repo.get(UpstreamTarget, id)
+
+  @doc """
+  Removes an upstream target.
+  """
+  def remove_upstream_target(%UpstreamTarget{} = target) do
+    Repo.delete(target)
+  end
+
+  ## Certificates
+
+  @doc """
+  Lists certificates for a project, ordered by domain.
+  """
+  def list_certificates(project_id) do
+    from(c in Certificate,
+      where: c.project_id == ^project_id,
+      order_by: [asc: c.domain]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single certificate by ID.
+  """
+  def get_certificate(id), do: Repo.get(Certificate, id)
+
+  @doc """
+  Gets a single certificate by ID, raises if not found.
+  """
+  def get_certificate!(id), do: Repo.get!(Certificate, id)
+
+  @doc """
+  Creates a certificate. Expects `key_pem` (plaintext) in attrs — it will be encrypted.
+  """
+  def create_certificate(attrs) do
+    %Certificate{}
+    |> Certificate.create_changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a certificate (name, auto_renew, acme_config).
+  """
+  def update_certificate(%Certificate{} = cert, attrs) do
+    cert
+    |> Certificate.update_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Renews a certificate with new PEM data.
+  """
+  def renew_certificate(%Certificate{} = cert, attrs) do
+    cert
+    |> Certificate.renew_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a certificate.
+  """
+  def delete_certificate(%Certificate{} = cert) do
+    Repo.delete(cert)
+  end
+
+  @doc """
+  Lists certificates expiring within the given number of days.
+  """
+  def list_expiring_certificates(days_ahead \\ 30) do
+    now = DateTime.utc_now()
+    threshold = DateTime.add(now, days_ahead * 86_400, :second)
+
+    from(c in Certificate,
+      where: c.status in ["active", "expiring_soon"],
+      where: c.not_after > ^now,
+      where: c.not_after <= ^threshold,
+      order_by: [asc: c.not_after]
+    )
+    |> Repo.all()
   end
 end

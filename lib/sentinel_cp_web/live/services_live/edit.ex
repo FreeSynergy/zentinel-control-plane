@@ -10,7 +10,12 @@ defmodule SentinelCpWeb.ServicesLive.Edit do
     with project when not is_nil(project) <- Projects.get_project_by_slug(slug),
          service when not is_nil(service) <- Services.get_service(service_id),
          true <- service.project_id == project.id do
-      route_type = if service.upstream_url, do: "upstream", else: "static"
+      route_type =
+        cond do
+          service.upstream_url -> "upstream"
+          service.redirect_url -> "redirect"
+          true -> "static"
+        end
 
       {:ok,
        assign(socket,
@@ -22,7 +27,11 @@ defmodule SentinelCpWeb.ServicesLive.Edit do
          show_retry: service.retry != %{} && service.retry != nil,
          show_cache: service.cache != %{} && service.cache != nil,
          show_rate_limit: service.rate_limit != %{} && service.rate_limit != nil,
-         show_health_check: service.health_check != %{} && service.health_check != nil
+         show_health_check: service.health_check != %{} && service.health_check != nil,
+         show_cors: service.cors != %{} && service.cors != nil,
+         show_access_control: service.access_control != %{} && service.access_control != nil,
+         show_compression: service.compression != %{} && service.compression != nil,
+         show_path_rewrite: service.path_rewrite != %{} && service.path_rewrite != nil
        )}
     else
       _ ->
@@ -60,18 +69,31 @@ defmodule SentinelCpWeb.ServicesLive.Edit do
           |> Map.put(:upstream_url, params["upstream_url"])
           |> Map.put(:respond_status, nil)
           |> Map.put(:respond_body, nil)
+          |> Map.put(:redirect_url, nil)
 
         "static" ->
           attrs
           |> Map.put(:upstream_url, nil)
           |> Map.put(:respond_status, parse_int(params["respond_status"]))
           |> Map.put(:respond_body, params["respond_body"])
+          |> Map.put(:redirect_url, nil)
+
+        "redirect" ->
+          attrs
+          |> Map.put(:upstream_url, nil)
+          |> Map.put(:respond_status, parse_int(params["redirect_status"]))
+          |> Map.put(:respond_body, nil)
+          |> Map.put(:redirect_url, params["redirect_url"])
       end
 
     attrs = maybe_put_map(attrs, :retry, params, "retry")
     attrs = maybe_put_map(attrs, :cache, params, "cache")
     attrs = maybe_put_map(attrs, :rate_limit, params, "rate_limit")
     attrs = maybe_put_map(attrs, :health_check, params, "health_check")
+    attrs = maybe_put_map(attrs, :cors, params, "cors")
+    attrs = maybe_put_map(attrs, :access_control, params, "access_control")
+    attrs = maybe_put_map(attrs, :compression, params, "compression")
+    attrs = maybe_put_map(attrs, :path_rewrite, params, "path_rewrite")
 
     case Services.update_service(service, attrs) do
       {:ok, updated} ->
@@ -156,6 +178,14 @@ defmodule SentinelCpWeb.ServicesLive.Edit do
               >
                 Static Response
               </button>
+              <button
+                type="button"
+                phx-click="switch_route_type"
+                phx-value-type="redirect"
+                class={["btn btn-sm", (@route_type == "redirect" && "btn-primary") || "btn-ghost"]}
+              >
+                Redirect
+              </button>
             </div>
           </div>
 
@@ -190,6 +220,26 @@ defmodule SentinelCpWeb.ServicesLive.Edit do
                 rows="3"
                 class="textarea textarea-bordered textarea-sm w-full font-mono"
               >{@service.respond_body}</textarea>
+            </div>
+          </div>
+
+          <div :if={@route_type == "redirect"} class="space-y-3">
+            <div class="form-control">
+              <label class="label"><span class="label-text font-medium">Redirect URL</span></label>
+              <input
+                type="text"
+                name="redirect_url"
+                value={@service.redirect_url}
+                required
+                class="input input-bordered input-sm w-full"
+              />
+            </div>
+            <div class="form-control">
+              <label class="label"><span class="label-text font-medium">Status Code</span></label>
+              <select name="redirect_status" class="select select-bordered select-sm w-40">
+                <option value="301" selected={@service.respond_status == 301}>301 Permanent</option>
+                <option value="302" selected={@service.respond_status == 302}>302 Temporary</option>
+              </select>
             </div>
           </div>
 
@@ -341,6 +391,179 @@ defmodule SentinelCpWeb.ServicesLive.Edit do
                   value={@service.health_check["interval"]}
                   class="input input-bordered input-xs w-24"
                   min="1"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="divider text-xs text-base-content/50">Policy Settings</div>
+
+          <div>
+            <button
+              type="button"
+              phx-click="toggle_section"
+              phx-value-section="cors"
+              class="btn btn-ghost btn-xs"
+            >
+              {if @show_cors, do: "▼", else: "▶"} CORS
+            </button>
+            <div :if={@show_cors} class="ml-4 mt-2 space-y-2">
+              <div class="form-control">
+                <label class="label"><span class="label-text text-xs">Allowed Origins</span></label>
+                <input
+                  type="text"
+                  name="cors[allowed_origins]"
+                  value={@service.cors["allowed_origins"]}
+                  class="input input-bordered input-xs w-full"
+                />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text text-xs">Allowed Methods</span></label>
+                <input
+                  type="text"
+                  name="cors[allowed_methods]"
+                  value={@service.cors["allowed_methods"]}
+                  class="input input-bordered input-xs w-full"
+                />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text text-xs">Allowed Headers</span></label>
+                <input
+                  type="text"
+                  name="cors[allowed_headers]"
+                  value={@service.cors["allowed_headers"]}
+                  class="input input-bordered input-xs w-full"
+                />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text text-xs">Max Age (seconds)</span></label>
+                <input
+                  type="number"
+                  name="cors[max_age]"
+                  value={@service.cors["max_age"]}
+                  class="input input-bordered input-xs w-24"
+                  min="0"
+                />
+              </div>
+              <div class="form-control">
+                <label class="label cursor-pointer gap-2 justify-start">
+                  <input
+                    type="checkbox"
+                    name="cors[allow_credentials]"
+                    value="true"
+                    checked={@service.cors["allow_credentials"] == "true"}
+                    class="checkbox checkbox-xs"
+                  />
+                  <span class="label-text text-xs">Allow Credentials</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <button
+              type="button"
+              phx-click="toggle_section"
+              phx-value-section="access_control"
+              class="btn btn-ghost btn-xs"
+            >
+              {if @show_access_control, do: "▼", else: "▶"} IP Access Control
+            </button>
+            <div :if={@show_access_control} class="ml-4 mt-2 space-y-2">
+              <div class="form-control">
+                <label class="label"><span class="label-text text-xs">Allow CIDRs (one per line)</span></label>
+                <textarea
+                  name="access_control[allow]"
+                  rows="3"
+                  class="textarea textarea-bordered textarea-xs w-full font-mono"
+                >{@service.access_control["allow"]}</textarea>
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text text-xs">Deny CIDRs (one per line)</span></label>
+                <textarea
+                  name="access_control[deny]"
+                  rows="3"
+                  class="textarea textarea-bordered textarea-xs w-full font-mono"
+                >{@service.access_control["deny"]}</textarea>
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text text-xs">Mode</span></label>
+                <select name="access_control[mode]" class="select select-bordered select-xs w-40">
+                  <option value="">—</option>
+                  <option value="deny_first" selected={@service.access_control["mode"] == "deny_first"}>Deny First</option>
+                  <option value="allow_first" selected={@service.access_control["mode"] == "allow_first"}>Allow First</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <button
+              type="button"
+              phx-click="toggle_section"
+              phx-value-section="compression"
+              class="btn btn-ghost btn-xs"
+            >
+              {if @show_compression, do: "▼", else: "▶"} Compression
+            </button>
+            <div :if={@show_compression} class="ml-4 mt-2 space-y-2">
+              <div class="form-control">
+                <label class="label"><span class="label-text text-xs">Algorithms</span></label>
+                <input
+                  type="text"
+                  name="compression[algorithms]"
+                  value={@service.compression["algorithms"]}
+                  class="input input-bordered input-xs w-full"
+                />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text text-xs">Min Size (bytes)</span></label>
+                <input
+                  type="number"
+                  name="compression[min_size]"
+                  value={@service.compression["min_size"]}
+                  class="input input-bordered input-xs w-32"
+                  min="0"
+                />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text text-xs">Content Types</span></label>
+                <input
+                  type="text"
+                  name="compression[content_types]"
+                  value={@service.compression["content_types"]}
+                  class="input input-bordered input-xs w-full"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <button
+              type="button"
+              phx-click="toggle_section"
+              phx-value-section="path_rewrite"
+              class="btn btn-ghost btn-xs"
+            >
+              {if @show_path_rewrite, do: "▼", else: "▶"} Path Rewrite
+            </button>
+            <div :if={@show_path_rewrite} class="ml-4 mt-2 space-y-2">
+              <div class="form-control">
+                <label class="label"><span class="label-text text-xs">Strip Prefix</span></label>
+                <input
+                  type="text"
+                  name="path_rewrite[strip_prefix]"
+                  value={@service.path_rewrite["strip_prefix"]}
+                  class="input input-bordered input-xs w-48"
+                />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text text-xs">Add Prefix</span></label>
+                <input
+                  type="text"
+                  name="path_rewrite[add_prefix]"
+                  value={@service.path_rewrite["add_prefix"]}
+                  class="input input-bordered input-xs w-48"
                 />
               </div>
             </div>

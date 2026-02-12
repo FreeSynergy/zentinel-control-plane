@@ -280,7 +280,7 @@ defmodule SentinelCpWeb.Integration.Api.ServiceWorkflowTest do
       assert error_resp["error"]["route_path"]
     end
 
-    test "must set either upstream_url or respond_status", %{conn: conn} do
+    test "must set either upstream_url, respond_status, or redirect_url", %{conn: conn} do
       {api_conn, context} = setup_api_context(conn, scopes: ["services:write"])
 
       error_resp =

@@ -93,8 +93,13 @@ defmodule SentinelCpWeb.ServicesLive.Show do
               <span class="font-mono">{@service.upstream_url || "—"}</span>
             </:item>
             <:item label="Static Response">
-              {if @service.respond_status,
+              {if @service.respond_status && !@service.redirect_url,
                 do: "#{@service.respond_status} #{@service.respond_body}",
+                else: "—"}
+            </:item>
+            <:item label="Redirect">
+              {if @service.redirect_url,
+                do: "#{@service.respond_status || 301} → #{@service.redirect_url}",
                 else: "—"}
             </:item>
             <:item label="Timeout">
@@ -114,6 +119,10 @@ defmodule SentinelCpWeb.ServicesLive.Show do
             <:item label="Rate Limit">{format_map(@service.rate_limit)}</:item>
             <:item label="Health Check">{format_map(@service.health_check)}</:item>
             <:item label="Headers">{format_map(@service.headers)}</:item>
+            <:item label="CORS">{format_map(@service.cors)}</:item>
+            <:item label="Access Control">{format_map(@service.access_control)}</:item>
+            <:item label="Compression">{format_map(@service.compression)}</:item>
+            <:item label="Path Rewrite">{format_map(@service.path_rewrite)}</:item>
           </.definition_list>
         </.k8s_section>
 

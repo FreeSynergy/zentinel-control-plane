@@ -136,6 +136,14 @@ defmodule SentinelCpWeb.Router do
     live "/projects/:project_slug/services/new", ServicesLive.New, :new
     live "/projects/:project_slug/services/:id", ServicesLive.Show, :show
     live "/projects/:project_slug/services/:id/edit", ServicesLive.Edit, :edit
+    live "/projects/:project_slug/upstream-groups", UpstreamGroupsLive.Index, :index
+    live "/projects/:project_slug/upstream-groups/new", UpstreamGroupsLive.New, :new
+    live "/projects/:project_slug/upstream-groups/:id", UpstreamGroupsLive.Show, :show
+    live "/projects/:project_slug/upstream-groups/:id/edit", UpstreamGroupsLive.Edit, :edit
+    live "/projects/:project_slug/certificates", CertificatesLive.Index, :index
+    live "/projects/:project_slug/certificates/new", CertificatesLive.New, :new
+    live "/projects/:project_slug/certificates/:id", CertificatesLive.Show, :show
+    live "/projects/:project_slug/certificates/:id/edit", CertificatesLive.Edit, :edit
 
     # Org-scoped dashboard
     live "/orgs/:org_slug/dashboard", DashboardLive.Index, :index
@@ -170,6 +178,29 @@ defmodule SentinelCpWeb.Router do
     live "/orgs/:org_slug/projects/:project_slug/services/new", ServicesLive.New, :new
     live "/orgs/:org_slug/projects/:project_slug/services/:id", ServicesLive.Show, :show
     live "/orgs/:org_slug/projects/:project_slug/services/:id/edit", ServicesLive.Edit, :edit
+    live "/orgs/:org_slug/projects/:project_slug/upstream-groups", UpstreamGroupsLive.Index, :index
+    live "/orgs/:org_slug/projects/:project_slug/upstream-groups/new", UpstreamGroupsLive.New, :new
+    live "/orgs/:org_slug/projects/:project_slug/upstream-groups/:id", UpstreamGroupsLive.Show, :show
+
+    live "/orgs/:org_slug/projects/:project_slug/upstream-groups/:id/edit",
+         UpstreamGroupsLive.Edit,
+         :edit
+
+    live "/orgs/:org_slug/projects/:project_slug/certificates",
+         CertificatesLive.Index,
+         :index
+
+    live "/orgs/:org_slug/projects/:project_slug/certificates/new",
+         CertificatesLive.New,
+         :new
+
+    live "/orgs/:org_slug/projects/:project_slug/certificates/:id",
+         CertificatesLive.Show,
+         :show
+
+    live "/orgs/:org_slug/projects/:project_slug/certificates/:id/edit",
+         CertificatesLive.Edit,
+         :edit
   end
 
   # Admin-only browser routes
@@ -295,6 +326,13 @@ defmodule SentinelCpWeb.Router do
       get "/services/preview-kdl", ServiceController, :preview_kdl
       get "/services", ServiceController, :index
       get "/services/:id", ServiceController, :show
+
+      get "/upstream-groups", UpstreamGroupController, :index
+      get "/upstream-groups/:id", UpstreamGroupController, :show
+
+      get "/certificates", CertificateController, :index
+      get "/certificates/:id", CertificateController, :show
+      get "/certificates/:id/download", CertificateController, :download
     end
   end
 
@@ -308,6 +346,17 @@ defmodule SentinelCpWeb.Router do
       post "/services", ServiceController, :create
       put "/services/:id", ServiceController, :update
       delete "/services/:id", ServiceController, :delete
+
+      post "/upstream-groups", UpstreamGroupController, :create
+      put "/upstream-groups/:id", UpstreamGroupController, :update
+      delete "/upstream-groups/:id", UpstreamGroupController, :delete
+      post "/upstream-groups/:id/targets", UpstreamGroupController, :add_target
+      put "/upstream-groups/:id/targets/:target_id", UpstreamGroupController, :update_target
+      delete "/upstream-groups/:id/targets/:target_id", UpstreamGroupController, :delete_target
+
+      post "/certificates", CertificateController, :create
+      put "/certificates/:id", CertificateController, :update
+      delete "/certificates/:id", CertificateController, :delete
     end
   end
 

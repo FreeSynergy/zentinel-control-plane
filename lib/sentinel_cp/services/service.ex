@@ -26,8 +26,15 @@ defmodule SentinelCp.Services.Service do
     field :rate_limit, :map, default: %{}
     field :health_check, :map, default: %{}
     field :headers, :map, default: %{}
+    field :cors, :map, default: %{}
+    field :access_control, :map, default: %{}
+    field :compression, :map, default: %{}
+    field :path_rewrite, :map, default: %{}
+    field :redirect_url, :string
 
     belongs_to :project, SentinelCp.Projects.Project
+    belongs_to :upstream_group, SentinelCp.Services.UpstreamGroup
+    belongs_to :certificate, SentinelCp.Services.Certificate
 
     timestamps(type: :utc_datetime)
   end
@@ -49,6 +56,13 @@ defmodule SentinelCp.Services.Service do
       :rate_limit,
       :health_check,
       :headers,
+      :cors,
+      :access_control,
+      :compression,
+      :path_rewrite,
+      :redirect_url,
+      :upstream_group_id,
+      :certificate_id,
       :project_id
     ])
     |> validate_required([:name, :route_path, :project_id])
@@ -77,7 +91,14 @@ defmodule SentinelCp.Services.Service do
       :cache,
       :rate_limit,
       :health_check,
-      :headers
+      :headers,
+      :cors,
+      :access_control,
+      :compression,
+      :path_rewrite,
+      :redirect_url,
+      :upstream_group_id,
+      :certificate_id
     ])
     |> validate_required([:name, :route_path])
     |> validate_length(:name, min: 1, max: 100)
@@ -92,13 +113,27 @@ defmodule SentinelCp.Services.Service do
   defp validate_route_type(changeset) do
     upstream = get_field(changeset, :upstream_url)
     respond_status = get_field(changeset, :respond_status)
+    redirect_url = get_field(changeset, :redirect_url)
+    upstream_group_id = get_field(changeset, :upstream_group_id)
+
+    set_count =
+      [present?(upstream), present?(respond_status), present?(redirect_url), present?(upstream_group_id)]
+      |> Enum.count(& &1)
 
     cond do
-      present?(upstream) && present?(respond_status) ->
-        add_error(changeset, :upstream_url, "cannot set both upstream_url and respond_status")
+      set_count > 1 ->
+        add_error(
+          changeset,
+          :upstream_url,
+          "must set exactly one of upstream_url, respond_status, redirect_url, or upstream_group_id"
+        )
 
-      !present?(upstream) && !present?(respond_status) ->
-        add_error(changeset, :upstream_url, "must set either upstream_url or respond_status")
+      set_count == 0 ->
+        add_error(
+          changeset,
+          :upstream_url,
+          "must set either upstream_url, respond_status, redirect_url, or upstream_group_id"
+        )
 
       true ->
         changeset

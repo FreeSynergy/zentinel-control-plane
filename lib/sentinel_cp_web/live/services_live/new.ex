@@ -21,7 +21,11 @@ defmodule SentinelCpWeb.ServicesLive.New do
            show_retry: false,
            show_cache: false,
            show_rate_limit: false,
-           show_health_check: false
+           show_health_check: false,
+           show_cors: false,
+           show_access_control: false,
+           show_compression: false,
+           show_path_rewrite: false
          )}
     end
   end
@@ -58,12 +62,21 @@ defmodule SentinelCpWeb.ServicesLive.New do
           attrs
           |> Map.put(:respond_status, parse_int(params["respond_status"]))
           |> Map.put(:respond_body, params["respond_body"])
+
+        "redirect" ->
+          attrs
+          |> Map.put(:redirect_url, params["redirect_url"])
+          |> Map.put(:respond_status, parse_int(params["redirect_status"]))
       end
 
     attrs = maybe_put_map(attrs, :retry, params, "retry")
     attrs = maybe_put_map(attrs, :cache, params, "cache")
     attrs = maybe_put_map(attrs, :rate_limit, params, "rate_limit")
     attrs = maybe_put_map(attrs, :health_check, params, "health_check")
+    attrs = maybe_put_map(attrs, :cors, params, "cors")
+    attrs = maybe_put_map(attrs, :access_control, params, "access_control")
+    attrs = maybe_put_map(attrs, :compression, params, "compression")
+    attrs = maybe_put_map(attrs, :path_rewrite, params, "path_rewrite")
 
     case Services.create_service(attrs) do
       {:ok, service} ->
@@ -152,6 +165,14 @@ defmodule SentinelCpWeb.ServicesLive.New do
               >
                 Static Response
               </button>
+              <button
+                type="button"
+                phx-click="switch_route_type"
+                phx-value-type="redirect"
+                class={["btn btn-sm", (@route_type == "redirect" && "btn-primary") || "btn-ghost"]}
+              >
+                Redirect
+              </button>
             </div>
           </div>
 
@@ -187,6 +208,26 @@ defmodule SentinelCpWeb.ServicesLive.New do
                 class="textarea textarea-bordered textarea-sm w-full font-mono"
                 placeholder="OK"
               ></textarea>
+            </div>
+          </div>
+
+          <div :if={@route_type == "redirect"} class="space-y-3">
+            <div class="form-control">
+              <label class="label"><span class="label-text font-medium">Redirect URL</span></label>
+              <input
+                type="text"
+                name="redirect_url"
+                required
+                class="input input-bordered input-sm w-full"
+                placeholder="e.g. https://new-domain.com/api"
+              />
+            </div>
+            <div class="form-control">
+              <label class="label"><span class="label-text font-medium">Status Code</span></label>
+              <select name="redirect_status" class="select select-bordered select-sm w-40">
+                <option value="301">301 Permanent</option>
+                <option value="302">302 Temporary</option>
+              </select>
             </div>
           </div>
 
@@ -338,6 +379,175 @@ defmodule SentinelCpWeb.ServicesLive.New do
                   class="input input-bordered input-xs w-24"
                   placeholder="10"
                   min="1"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="divider text-xs text-base-content/50">Policy Settings</div>
+
+          <div>
+            <button
+              type="button"
+              phx-click="toggle_section"
+              phx-value-section="cors"
+              class="btn btn-ghost btn-xs"
+            >
+              {if @show_cors, do: "▼", else: "▶"} CORS
+            </button>
+            <div :if={@show_cors} class="ml-4 mt-2 space-y-2">
+              <div class="form-control">
+                <label class="label"><span class="label-text text-xs">Allowed Origins</span></label>
+                <input
+                  type="text"
+                  name="cors[allowed_origins]"
+                  class="input input-bordered input-xs w-full"
+                  placeholder="*, https://example.com"
+                />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text text-xs">Allowed Methods</span></label>
+                <input
+                  type="text"
+                  name="cors[allowed_methods]"
+                  class="input input-bordered input-xs w-full"
+                  placeholder="GET, POST, PUT, DELETE"
+                />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text text-xs">Allowed Headers</span></label>
+                <input
+                  type="text"
+                  name="cors[allowed_headers]"
+                  class="input input-bordered input-xs w-full"
+                  placeholder="Content-Type, Authorization"
+                />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text text-xs">Max Age (seconds)</span></label>
+                <input
+                  type="number"
+                  name="cors[max_age]"
+                  class="input input-bordered input-xs w-24"
+                  placeholder="86400"
+                  min="0"
+                />
+              </div>
+              <div class="form-control">
+                <label class="label cursor-pointer gap-2 justify-start">
+                  <input type="checkbox" name="cors[allow_credentials]" value="true" class="checkbox checkbox-xs" />
+                  <span class="label-text text-xs">Allow Credentials</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <button
+              type="button"
+              phx-click="toggle_section"
+              phx-value-section="access_control"
+              class="btn btn-ghost btn-xs"
+            >
+              {if @show_access_control, do: "▼", else: "▶"} IP Access Control
+            </button>
+            <div :if={@show_access_control} class="ml-4 mt-2 space-y-2">
+              <div class="form-control">
+                <label class="label"><span class="label-text text-xs">Allow CIDRs (one per line)</span></label>
+                <textarea
+                  name="access_control[allow]"
+                  rows="3"
+                  class="textarea textarea-bordered textarea-xs w-full font-mono"
+                  placeholder="10.0.0.0/8&#10;192.168.0.0/16"
+                ></textarea>
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text text-xs">Deny CIDRs (one per line)</span></label>
+                <textarea
+                  name="access_control[deny]"
+                  rows="3"
+                  class="textarea textarea-bordered textarea-xs w-full font-mono"
+                  placeholder="0.0.0.0/0"
+                ></textarea>
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text text-xs">Mode</span></label>
+                <select name="access_control[mode]" class="select select-bordered select-xs w-40">
+                  <option value="">—</option>
+                  <option value="deny_first">Deny First</option>
+                  <option value="allow_first">Allow First</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <button
+              type="button"
+              phx-click="toggle_section"
+              phx-value-section="compression"
+              class="btn btn-ghost btn-xs"
+            >
+              {if @show_compression, do: "▼", else: "▶"} Compression
+            </button>
+            <div :if={@show_compression} class="ml-4 mt-2 space-y-2">
+              <div class="form-control">
+                <label class="label"><span class="label-text text-xs">Algorithms</span></label>
+                <input
+                  type="text"
+                  name="compression[algorithms]"
+                  class="input input-bordered input-xs w-full"
+                  placeholder="gzip, brotli, zstd"
+                />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text text-xs">Min Size (bytes)</span></label>
+                <input
+                  type="number"
+                  name="compression[min_size]"
+                  class="input input-bordered input-xs w-32"
+                  placeholder="1024"
+                  min="0"
+                />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text text-xs">Content Types</span></label>
+                <input
+                  type="text"
+                  name="compression[content_types]"
+                  class="input input-bordered input-xs w-full"
+                  placeholder="text/html, application/json"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <button
+              type="button"
+              phx-click="toggle_section"
+              phx-value-section="path_rewrite"
+              class="btn btn-ghost btn-xs"
+            >
+              {if @show_path_rewrite, do: "▼", else: "▶"} Path Rewrite
+            </button>
+            <div :if={@show_path_rewrite} class="ml-4 mt-2 space-y-2">
+              <div class="form-control">
+                <label class="label"><span class="label-text text-xs">Strip Prefix</span></label>
+                <input
+                  type="text"
+                  name="path_rewrite[strip_prefix]"
+                  class="input input-bordered input-xs w-48"
+                  placeholder="/api/v1"
+                />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text text-xs">Add Prefix</span></label>
+                <input
+                  type="text"
+                  name="path_rewrite[add_prefix]"
+                  class="input input-bordered input-xs w-48"
+                  placeholder="/v2"
                 />
               </div>
             </div>

@@ -16,6 +16,9 @@ defmodule SentinelCp.Services.ProjectConfig do
     field :log_level, :string, default: "info"
     field :metrics_port, :integer, default: 9090
     field :custom_settings, :map, default: %{}
+    field :default_cors, :map, default: %{}
+    field :default_compression, :map, default: %{}
+    field :global_access_control, :map, default: %{}
 
     belongs_to :project, SentinelCp.Projects.Project
 
@@ -24,7 +27,15 @@ defmodule SentinelCp.Services.ProjectConfig do
 
   def changeset(config, attrs) do
     config
-    |> cast(attrs, [:log_level, :metrics_port, :custom_settings, :project_id])
+    |> cast(attrs, [
+      :log_level,
+      :metrics_port,
+      :custom_settings,
+      :default_cors,
+      :default_compression,
+      :global_access_control,
+      :project_id
+    ])
     |> validate_required([:project_id])
     |> validate_inclusion(:log_level, @log_levels)
     |> validate_number(:metrics_port, greater_than: 0, less_than: 65536)

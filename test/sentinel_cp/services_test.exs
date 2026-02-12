@@ -74,8 +74,8 @@ defmodule SentinelCp.ServicesTest do
                  respond_status: 200
                })
 
-      assert %{upstream_url: ["cannot set both upstream_url and respond_status"]} =
-               errors_on(changeset)
+      assert %{upstream_url: [msg]} = errors_on(changeset)
+      assert msg =~ "must set exactly one"
     end
 
     test "returns error when neither upstream_url nor respond_status is set" do
@@ -88,8 +88,108 @@ defmodule SentinelCp.ServicesTest do
                  route_path: "/neither"
                })
 
-      assert %{upstream_url: ["must set either upstream_url or respond_status"]} =
-               errors_on(changeset)
+      assert %{upstream_url: [msg]} = errors_on(changeset)
+      assert msg =~ "must set either"
+    end
+
+    test "creates a redirect service" do
+      project = project_fixture()
+
+      assert {:ok, %Service{} = service} =
+               Services.create_service(%{
+                 project_id: project.id,
+                 name: "Old API",
+                 route_path: "/old-api/*",
+                 redirect_url: "https://new-api.example.com"
+               })
+
+      assert service.redirect_url == "https://new-api.example.com"
+      assert is_nil(service.upstream_url)
+      assert is_nil(service.respond_status)
+    end
+
+    test "returns error when both upstream_url and redirect_url are set" do
+      project = project_fixture()
+
+      assert {:error, changeset} =
+               Services.create_service(%{
+                 project_id: project.id,
+                 name: "Both Set",
+                 route_path: "/both",
+                 upstream_url: "http://localhost:3000",
+                 redirect_url: "https://example.com"
+               })
+
+      assert %{upstream_url: [msg]} = errors_on(changeset)
+      assert msg =~ "must set exactly one"
+    end
+
+    test "creates service with CORS config" do
+      project = project_fixture()
+
+      cors = %{"allowed_origins" => "*", "allowed_methods" => "GET, POST", "max_age" => 86400}
+
+      assert {:ok, %Service{} = service} =
+               Services.create_service(%{
+                 project_id: project.id,
+                 name: "CORS Service",
+                 route_path: "/api/*",
+                 upstream_url: "http://localhost:3000",
+                 cors: cors
+               })
+
+      assert service.cors == cors
+    end
+
+    test "creates service with access_control config" do
+      project = project_fixture()
+
+      ac = %{"allow" => "10.0.0.0/8", "deny" => "0.0.0.0/0", "mode" => "deny_first"}
+
+      assert {:ok, %Service{} = service} =
+               Services.create_service(%{
+                 project_id: project.id,
+                 name: "ACL Service",
+                 route_path: "/api/*",
+                 upstream_url: "http://localhost:3000",
+                 access_control: ac
+               })
+
+      assert service.access_control == ac
+    end
+
+    test "creates service with compression config" do
+      project = project_fixture()
+
+      comp = %{"algorithms" => "gzip, brotli", "min_size" => 1024}
+
+      assert {:ok, %Service{} = service} =
+               Services.create_service(%{
+                 project_id: project.id,
+                 name: "Comp Service",
+                 route_path: "/api/*",
+                 upstream_url: "http://localhost:3000",
+                 compression: comp
+               })
+
+      assert service.compression == comp
+    end
+
+    test "creates service with path_rewrite config" do
+      project = project_fixture()
+
+      pr = %{"strip_prefix" => "/api/v1", "add_prefix" => "/v2"}
+
+      assert {:ok, %Service{} = service} =
+               Services.create_service(%{
+                 project_id: project.id,
+                 name: "Rewrite Service",
+                 route_path: "/api/v1/*",
+                 upstream_url: "http://localhost:3000",
+                 path_rewrite: pr
+               })
+
+      assert service.path_rewrite == pr
     end
 
     test "returns error for duplicate slug within project" do

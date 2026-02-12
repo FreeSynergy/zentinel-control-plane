@@ -28,6 +28,7 @@ defmodule SentinelCp.Application do
     # Start periodic workers
     SentinelCp.Rollouts.SchedulerWorker.ensure_started()
     SentinelCp.Nodes.DriftWorker.ensure_started()
+    SentinelCp.Services.CertificateExpiryWorker.ensure_started()
 
     result
   end
