@@ -21,6 +21,10 @@ defmodule SentinelCp.Audit.AuditLog do
     field :changes, :map, default: %{}
     field :metadata, :map, default: %{}
 
+    # Tamper-evident chain fields
+    field :previous_hash, :string
+    field :entry_hash, :string
+
     timestamps(type: :utc_datetime, updated_at: false)
   end
 
@@ -38,7 +42,9 @@ defmodule SentinelCp.Audit.AuditLog do
       :resource_type,
       :resource_id,
       :changes,
-      :metadata
+      :metadata,
+      :previous_hash,
+      :entry_hash
     ])
     |> validate_required([:actor_type, :action, :resource_type])
     |> validate_inclusion(:actor_type, @actor_types)

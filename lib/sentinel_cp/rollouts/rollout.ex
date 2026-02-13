@@ -9,7 +9,7 @@ defmodule SentinelCp.Rollouts.Rollout do
   @foreign_key_type :binary_id
 
   @states ~w(pending running paused completed cancelled failed)
-  @strategies ~w(rolling all_at_once)
+  @strategies ~w(rolling all_at_once blue_green canary)
   @approval_states ~w(not_required pending_approval approved rejected)
 
   schema "rollouts" do
@@ -40,6 +40,12 @@ defmodule SentinelCp.Rollouts.Rollout do
     # Scheduled rollout
     field :scheduled_at, :utc_datetime
 
+    # Advanced deployment fields
+    field :canary_analysis_config, :map
+    field :canary_analysis_results, :map
+    field :deployment_slot, :string
+    field :validation_period_seconds, :integer, default: 300
+
     belongs_to :project, SentinelCp.Projects.Project
     belongs_to :bundle, SentinelCp.Bundles.Bundle
     belongs_to :environment, SentinelCp.Projects.Environment
@@ -67,7 +73,10 @@ defmodule SentinelCp.Rollouts.Rollout do
       :scheduled_at,
       :auto_rollback,
       :rollback_threshold,
-      :custom_health_checks
+      :custom_health_checks,
+      :canary_analysis_config,
+      :deployment_slot,
+      :validation_period_seconds
     ])
     |> validate_required([:project_id, :bundle_id, :target_selector])
     |> validate_inclusion(:strategy, @strategies)

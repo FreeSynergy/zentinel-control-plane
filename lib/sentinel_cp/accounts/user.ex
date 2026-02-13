@@ -17,6 +17,12 @@ defmodule SentinelCp.Accounts.User do
     field :role, :string, default: "reader"
     field :confirmed_at, :utc_datetime
 
+    # SSO fields
+    field :sso_provider_type, :string
+    field :sso_provider_id, :binary_id
+    field :sso_subject, :string
+    field :sso_provisioned_at, :utc_datetime
+
     has_many :api_keys, SentinelCp.Accounts.ApiKey
     has_many :org_memberships, SentinelCp.Orgs.OrgMembership
 

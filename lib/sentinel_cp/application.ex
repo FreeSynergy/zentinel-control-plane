@@ -14,6 +14,8 @@ defmodule SentinelCp.Application do
       {Phoenix.PubSub, name: SentinelCp.PubSub},
       # Prometheus metrics (must start before Endpoint)
       SentinelCp.PromEx,
+      # API rate limiting (ETS-backed token bucket)
+      SentinelCp.RateLimit,
       # Background job processing
       {Oban, Application.fetch_env!(:sentinel_cp, Oban)},
       # Start to serve requests, typically the last entry

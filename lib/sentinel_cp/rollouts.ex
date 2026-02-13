@@ -20,7 +20,9 @@ defmodule SentinelCp.Rollouts do
     HealthChecker
   }
 
-  alias SentinelCp.{Bundles, Nodes, Notifications, Orgs, Projects}
+  alias SentinelCp.{Bundles, Events, Nodes, Orgs, Projects}
+  # Events module replaces Notifications with backward-compatible API
+  alias SentinelCp.Events, as: Notifications
 
   ## Rollout Template CRUD
 
@@ -179,15 +181,56 @@ defmodule SentinelCp.Rollouts do
   ## Rollout CRUD
 
   @doc """
-  Creates a rollout. Validates that the bundle is compiled.
+  Creates a rollout. Validates that the bundle is compiled and
+  no freeze window is active for the target environment.
   """
-  def create_rollout(attrs) do
+  def create_rollout(attrs, opts \\ []) do
     changeset = Rollout.create_changeset(%Rollout{}, attrs)
+    override_freeze = Keyword.get(opts, :override_freeze, false)
 
-    with {:ok, changeset} <- validate_bundle_compiled(changeset),
+    with :ok <- check_freeze_window(changeset, override_freeze),
+         {:ok, changeset} <- validate_bundle_compiled(changeset),
          {:ok, rollout} <- Repo.insert(changeset) do
       {:ok, rollout}
     end
+  end
+
+  defp check_freeze_window(_changeset, true), do: :ok
+
+  defp check_freeze_window(changeset, false) do
+    project_id = Ecto.Changeset.get_field(changeset, :project_id)
+    environment_id = Ecto.Changeset.get_field(changeset, :environment_id)
+
+    case active_freeze_window(project_id, environment_id) do
+      nil -> :ok
+      window -> {:error, {:freeze_window_active, window}}
+    end
+  end
+
+  @doc """
+  Returns the currently active freeze window for a project/environment, if any.
+  """
+  def active_freeze_window(nil, _environment_id), do: nil
+
+  def active_freeze_window(project_id, environment_id) do
+    now = DateTime.utc_now()
+
+    query =
+      from(w in SentinelCp.Rollouts.FreezeWindow,
+        where:
+          w.project_id == ^project_id and
+            w.starts_at <= ^now and
+            w.ends_at >= ^now
+      )
+
+    query =
+      if environment_id do
+        where(query, [w], is_nil(w.environment_id) or w.environment_id == ^environment_id)
+      else
+        query
+      end
+
+    Repo.one(query)
   end
 
   @doc """

@@ -5,14 +5,23 @@ defmodule SentinelCp.Audit do
 
   import Ecto.Query, warn: false
   alias SentinelCp.Repo
-  alias SentinelCp.Audit.AuditLog
+  alias SentinelCp.Audit.{AuditLog, ChainVerifier}
 
   @audit_topic "audit_logs"
 
   @doc """
   Logs an audit event and broadcasts it via PubSub.
+  Includes tamper-evident HMAC chain linking.
   """
   def log(attrs) do
+    previous_hash = ChainVerifier.get_latest_hash()
+    entry_hash = ChainVerifier.compute_entry_hash(attrs, previous_hash)
+
+    attrs =
+      attrs
+      |> Map.put(:previous_hash, previous_hash)
+      |> Map.put(:entry_hash, entry_hash)
+
     result =
       %AuditLog{}
       |> AuditLog.changeset(attrs)

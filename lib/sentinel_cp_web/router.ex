@@ -28,6 +28,7 @@ defmodule SentinelCpWeb.Router do
 
   pipeline :api_auth do
     plug SentinelCpWeb.Plugs.ApiAuth
+    plug SentinelCpWeb.Plugs.RateLimit, scope: "default"
   end
 
   # Scope-specific pipelines
@@ -102,6 +103,16 @@ defmodule SentinelCpWeb.Router do
 
     post "/session", SessionController, :create
     delete "/session", SessionController, :delete
+  end
+
+  # SSO authentication routes (no login required)
+  scope "/auth", SentinelCpWeb.Auth do
+    pipe_through [:browser]
+
+    get "/oidc/login/:provider_id", SsoController, :oidc_login
+    get "/oidc/callback", SsoController, :oidc_callback
+    get "/saml/login/:provider_id", SsoController, :saml_login
+    post "/saml/acs", SsoController, :saml_acs
   end
 
   # Browser routes (login required)
@@ -316,6 +327,10 @@ defmodule SentinelCpWeb.Router do
     pipe_through :api
 
     post "/github", WebhookController, :github
+    post "/gitlab", WebhookController, :gitlab
+    post "/bitbucket", WebhookController, :bitbucket
+    post "/gitea", WebhookController, :gitea
+    post "/generic", WebhookController, :generic
   end
 
   # Node-facing API (called by Sentinel nodes)
@@ -512,6 +527,15 @@ defmodule SentinelCpWeb.Router do
     get "/api-keys/:id", ApiKeyController, :show
     post "/api-keys/:id/revoke", ApiKeyController, :revoke
     delete "/api-keys/:id", ApiKeyController, :delete
+  end
+
+  # Audit verification endpoint (API key auth required)
+  scope "/api/v1", SentinelCpWeb.Api do
+    pipe_through [:api, :api_auth]
+
+    get "/audit/verify", AuditVerificationController, :verify
+    get "/audit/checkpoints", AuditVerificationController, :checkpoints
+    post "/audit/checkpoints", AuditVerificationController, :create_checkpoint
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development

@@ -85,6 +85,9 @@ defmodule SentinelCp.MixProject do
       {:argon2_elixir, "~> 4.1"},
       {:plug_crypto, "~> 2.1"},
       {:jose, "~> 1.11"},
+      {:nimble_totp, "~> 1.0"},
+      {:openid_connect, "~> 1.0"},
+      {:samly, "~> 1.4"},
 
       # Observability
       {:prom_ex, "~> 1.11"},
