@@ -131,7 +131,7 @@ defmodule SentinelCp.Services.DiscoveryTest do
       changeset =
         DiscoverySource.changeset(%DiscoverySource{}, %{
           hostname: "_http._tcp.api.internal",
-          source_type: "consul",
+          source_type: "invalid_type",
           upstream_group_id: Ecto.UUID.generate(),
           project_id: Ecto.UUID.generate()
         })

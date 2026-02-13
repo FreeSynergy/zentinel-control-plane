@@ -8,7 +8,7 @@ defmodule SentinelCp.Services do
 
   import Ecto.Query, warn: false
   alias SentinelCp.Repo
-  alias SentinelCp.Services.{Service, ServiceTemplate, ProjectConfig, UpstreamGroup, UpstreamTarget, Certificate, TrustStore, AuthPolicy, OpenApiSpec, DiscoverySource, DiscoverySync, Middleware, ServiceMiddleware, InternalCa, IssuedCertificate, CACrypto, CertificateCrypto}
+  alias SentinelCp.Services.{Service, ServiceTemplate, ProjectConfig, UpstreamGroup, UpstreamTarget, Certificate, TrustStore, AuthPolicy, OpenApiSpec, DiscoverySource, DiscoverySync, Middleware, ServiceMiddleware, InternalCa, IssuedCertificate, CACrypto, CertificateCrypto, CircuitBreakerStatus}
   alias SentinelCp.Secrets
 
   ## Services
@@ -1018,6 +1018,92 @@ defmodule SentinelCp.Services do
     end)
   end
 
+  ## Circuit Breaker Status
+
+  @doc """
+  Upserts a circuit breaker status for an upstream group on a node.
+  """
+  def upsert_circuit_breaker_status(attrs) do
+    %CircuitBreakerStatus{}
+    |> CircuitBreakerStatus.changeset(attrs)
+    |> Repo.insert(
+      on_conflict: {:replace, [:state, :failure_count, :success_count, :last_failure_at, :last_success_at, :last_trip_at, :metadata, :updated_at]},
+      conflict_target: [:upstream_group_id, :node_id],
+      returning: true
+    )
+    |> tap(fn
+      {:ok, status} ->
+        Phoenix.PubSub.broadcast(
+          SentinelCp.PubSub,
+          "circuit_breaker:#{status.upstream_group_id}",
+          {:circuit_breaker_updated, status.upstream_group_id}
+        )
+
+      _ ->
+        :ok
+    end)
+  end
+
+  @doc """
+  Lists circuit breaker statuses for an upstream group.
+  """
+  def list_circuit_breaker_statuses(upstream_group_id) do
+    from(cb in CircuitBreakerStatus,
+      where: cb.upstream_group_id == ^upstream_group_id,
+      preload: [:node],
+      order_by: [asc: cb.state, asc: cb.inserted_at]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns a summary of circuit breaker states for an upstream group.
+  """
+  def get_circuit_breaker_summary(upstream_group_id) do
+    stats =
+      from(cb in CircuitBreakerStatus,
+        where: cb.upstream_group_id == ^upstream_group_id,
+        group_by: cb.state,
+        select: {cb.state, count(cb.id)}
+      )
+      |> Repo.all()
+      |> Map.new()
+
+    %{
+      open: Map.get(stats, "open", 0),
+      half_open: Map.get(stats, "half_open", 0),
+      closed: Map.get(stats, "closed", 0),
+      total: Map.values(stats) |> Enum.sum()
+    }
+  end
+
+  @doc """
+  Returns a fleet-wide summary of circuit breaker states across all groups.
+  """
+  def get_fleet_circuit_breaker_summary(project_id) do
+    stats =
+      from(cb in CircuitBreakerStatus,
+        join: g in UpstreamGroup,
+        on: g.id == cb.upstream_group_id,
+        where: g.project_id == ^project_id,
+        group_by: cb.state,
+        select: {cb.state, count(cb.id)}
+      )
+      |> Repo.all()
+      |> Map.new()
+
+    total_groups =
+      from(g in UpstreamGroup, where: g.project_id == ^project_id)
+      |> Repo.aggregate(:count)
+
+    %{
+      total_groups: total_groups,
+      open: Map.get(stats, "open", 0),
+      half_open: Map.get(stats, "half_open", 0),
+      closed: Map.get(stats, "closed", 0)
+    }
+  end
+
   ## Topology
 
   @doc """
@@ -1166,6 +1252,16 @@ defmodule SentinelCp.Services do
     end
   end
 
+  defp resolve_records(%DiscoverySource{source_type: "consul"} = source) do
+    case Secrets.resolve_references(source.config || %{}, source.project_id) do
+      {:ok, resolved_config} ->
+        consul_resolver().resolve_service(resolved_config)
+
+      {:error, reason} ->
+        {:error, "Secret resolution failed: #{inspect(reason)}"}
+    end
+  end
+
   defp resolve_records(%DiscoverySource{} = source) do
     dns_resolver().resolve_srv(source.hostname)
   end
@@ -1176,6 +1272,10 @@ defmodule SentinelCp.Services do
 
   defp k8s_resolver do
     Application.get_env(:sentinel_cp, :k8s_resolver, SentinelCp.Services.K8sResolver.HTTP)
+  end
+
+  defp consul_resolver do
+    Application.get_env(:sentinel_cp, :consul_resolver, SentinelCp.Services.ConsulResolver.HTTP)
   end
 
   defp resolve_auth_policy_id(%{security_refs: refs}, policy_map) when is_list(refs) do

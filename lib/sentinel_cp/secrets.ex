@@ -9,7 +9,7 @@ defmodule SentinelCp.Secrets do
 
   import Ecto.Query, warn: false
   alias SentinelCp.Repo
-  alias SentinelCp.Secrets.{Secret, SecretCrypto}
+  alias SentinelCp.Secrets.{Secret, SecretCrypto, VaultConfig}
 
   @secret_ref_pattern ~r/\$\{secrets\.([a-zA-Z_][a-zA-Z0-9_]*)\}/
 
@@ -90,6 +90,85 @@ defmodule SentinelCp.Secrets do
     SecretCrypto.decrypt(encrypted)
   end
 
+  ## Vault Config
+
+  @doc """
+  Gets the Vault config for a project.
+  """
+  def get_vault_config(project_id) do
+    Repo.get_by(VaultConfig, project_id: project_id)
+  end
+
+  @doc """
+  Creates a Vault config for a project.
+  """
+  def create_vault_config(attrs) do
+    %VaultConfig{}
+    |> VaultConfig.create_changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a Vault config.
+  """
+  def update_vault_config(%VaultConfig{} = config, attrs) do
+    config
+    |> VaultConfig.update_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a Vault config.
+  """
+  def delete_vault_config(%VaultConfig{} = config) do
+    Repo.delete(config)
+  end
+
+  @doc """
+  Tests the Vault connection by calling the health endpoint.
+  Updates the VaultConfig with the connection status.
+  """
+  def test_vault_connection(project_id) do
+    case get_vault_config(project_id) do
+      nil ->
+        {:error, :not_configured}
+
+      config ->
+        with {:ok, auth_config} <- VaultConfig.decrypt_auth_config(config.auth_config) do
+          vault_config_map = %{
+            vault_addr: config.vault_addr,
+            auth_method: config.auth_method,
+            auth_config: auth_config,
+            mount_path: config.mount_path,
+            base_path: config.base_path,
+            namespace: config.namespace
+          }
+
+          case vault_client().health(vault_config_map) do
+            {:ok, health} ->
+              now = DateTime.utc_now() |> DateTime.truncate(:second)
+              status = if health.sealed, do: "sealed", else: "connected"
+
+              config
+              |> VaultConfig.status_changeset(%{
+                last_connected_at: now,
+                connection_status: status
+              })
+              |> Repo.update()
+
+              {:ok, health}
+
+            {:error, reason} ->
+              config
+              |> VaultConfig.status_changeset(%{connection_status: "error"})
+              |> Repo.update()
+
+              {:error, reason}
+          end
+        end
+    end
+  end
+
   ## Reference Resolution
 
   @doc """
@@ -121,8 +200,65 @@ defmodule SentinelCp.Secrets do
       end)
 
     case secret_map do
-      {:ok, map} -> resolve_map(config_map, map)
-      error -> error
+      {:ok, local_map} ->
+        # Merge Vault secrets if enabled (Vault wins on conflict)
+        case merge_vault_secrets(local_map, project_id, config_map) do
+          {:ok, merged_map} -> resolve_map(config_map, merged_map)
+          error -> error
+        end
+
+      error ->
+        error
+    end
+  end
+
+  defp merge_vault_secrets(local_map, project_id, config_map) do
+    case get_vault_config(project_id) do
+      %VaultConfig{enabled: true} = vault_config ->
+        referenced_names = find_references(config_map)
+        missing_names = Enum.filter(referenced_names, &(not Map.has_key?(local_map, &1)))
+
+        if missing_names == [] do
+          {:ok, local_map}
+        else
+          with {:ok, auth_config} <- VaultConfig.decrypt_auth_config(vault_config.auth_config) do
+            vault_map = %{
+              vault_addr: vault_config.vault_addr,
+              auth_method: vault_config.auth_method,
+              auth_config: auth_config,
+              mount_path: vault_config.mount_path,
+              base_path: vault_config.base_path,
+              namespace: vault_config.namespace
+            }
+
+            vault_secrets =
+              Enum.reduce_while(missing_names, {:ok, %{}}, fn name, {:ok, acc} ->
+                case vault_client().read_secret(vault_map, name) do
+                  {:ok, %{"value" => value}} ->
+                    {:cont, {:ok, Map.put(acc, name, value)}}
+
+                  {:ok, data} when is_map(data) ->
+                    # Use the first value if it's a flat map
+                    value = data |> Map.values() |> List.first() || ""
+                    {:cont, {:ok, Map.put(acc, name, value)}}
+
+                  {:error, :not_found} ->
+                    {:cont, {:ok, acc}}
+
+                  {:error, reason} ->
+                    {:halt, {:error, {:vault_error, name, reason}}}
+                end
+              end)
+
+            case vault_secrets do
+              {:ok, fetched} -> {:ok, Map.merge(local_map, fetched)}
+              error -> error
+            end
+          end
+        end
+
+      _ ->
+        {:ok, local_map}
     end
   end
 
@@ -189,4 +325,8 @@ defmodule SentinelCp.Secrets do
   end
 
   defp find_refs_in_value(_), do: []
+
+  defp vault_client do
+    Application.get_env(:sentinel_cp, :vault_client, SentinelCp.Secrets.VaultClient.HTTP)
+  end
 end

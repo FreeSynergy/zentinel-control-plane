@@ -10,6 +10,14 @@ Mox.defmock(SentinelCp.Services.K8sResolver.Mock,
   for: SentinelCp.Services.K8sResolver
 )
 
+Mox.defmock(SentinelCp.Services.ConsulResolver.Mock,
+  for: SentinelCp.Services.ConsulResolver
+)
+
+Mox.defmock(SentinelCp.Secrets.VaultClient.Mock,
+  for: SentinelCp.Secrets.VaultClient
+)
+
 Mox.defmock(SentinelCp.Services.Acme.Client.Mock,
   for: SentinelCp.Services.Acme.Client
 )

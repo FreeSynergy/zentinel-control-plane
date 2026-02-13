@@ -183,6 +183,8 @@ defmodule SentinelCpWeb.Router do
     live "/projects/:project_slug/middlewares/:id/edit", MiddlewaresLive.Edit, :edit
     live "/projects/:project_slug/secrets", SecretsLive.Index, :index
     live "/projects/:project_slug/topology", TopologyLive.Index, :index
+    live "/projects/:project_slug/waf", WafLive.Index, :index
+    live "/projects/:project_slug/waf/anomalies", WafLive.Anomalies, :index
     live "/projects/:project_slug/analytics", AnalyticsLive.Index, :index
     live "/projects/:project_slug/analytics/services/:service_id", AnalyticsLive.Service, :show
     live "/projects/:project_slug/openapi/import", OpenApiLive.Import, :import
@@ -328,6 +330,14 @@ defmodule SentinelCpWeb.Router do
          TopologyLive.Index,
          :index
 
+    live "/orgs/:org_slug/projects/:project_slug/waf",
+         WafLive.Index,
+         :index
+
+    live "/orgs/:org_slug/projects/:project_slug/waf/anomalies",
+         WafLive.Anomalies,
+         :index
+
     live "/orgs/:org_slug/projects/:project_slug/analytics",
          AnalyticsLive.Index,
          :index
@@ -393,6 +403,7 @@ defmodule SentinelCpWeb.Router do
     post "/:node_id/events", NodeController, :events
     post "/:node_id/config", NodeController, :config
     post "/:node_id/metrics", NodeController, :metrics
+    post "/:node_id/waf-events", NodeController, :waf_events
   end
 
   # Control plane API — Nodes (read)
@@ -580,6 +591,12 @@ defmodule SentinelCpWeb.Router do
       put "/secrets/:id", SecretController, :update
       delete "/secrets/:id", SecretController, :delete
       post "/secrets/:id/rotate", SecretController, :rotate
+
+      get "/vault", VaultController, :show
+      post "/vault", VaultController, :create
+      put "/vault", VaultController, :update
+      delete "/vault", VaultController, :delete
+      post "/vault/test", VaultController, :test_connection
 
       post "/config/import", ConfigExportController, :import
     end

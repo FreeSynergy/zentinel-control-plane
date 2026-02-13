@@ -13,8 +13,14 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.Show do
       discovery_source = Services.get_discovery_source_for_group(group.id)
       trust_store = if group.trust_store_id, do: Services.get_trust_store(group.trust_store_id), else: nil
 
-      if connected?(socket) && discovery_source do
-        Phoenix.PubSub.subscribe(SentinelCp.PubSub, "discovery:#{discovery_source.id}")
+      cb_statuses = Services.list_circuit_breaker_statuses(group.id)
+
+      if connected?(socket) do
+        if discovery_source do
+          Phoenix.PubSub.subscribe(SentinelCp.PubSub, "discovery:#{discovery_source.id}")
+        end
+
+        Phoenix.PubSub.subscribe(SentinelCp.PubSub, "circuit_breaker:#{group.id}")
       end
 
       {:ok,
@@ -25,6 +31,7 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.Show do
          group: group,
          trust_store: trust_store,
          discovery_source: discovery_source,
+         cb_statuses: cb_statuses,
          show_discovery_form: false,
          editing_discovery: false,
          discovery_source_type: "dns_srv"
@@ -33,6 +40,12 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.Show do
       _ ->
         {:ok, push_navigate(socket, to: ~p"/orgs")}
     end
+  end
+
+  @impl true
+  def handle_info({:circuit_breaker_updated, _group_id}, socket) do
+    cb_statuses = Services.list_circuit_breaker_statuses(socket.assigns.group.id)
+    {:noreply, assign(socket, cb_statuses: cb_statuses)}
   end
 
   @impl true
@@ -366,6 +379,10 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.Show do
                 <:item :if={@discovery_source.source_type == "kubernetes"} label="Namespace"><span class="font-mono text-sm">{@discovery_source.config["namespace"]}</span></:item>
                 <:item :if={@discovery_source.source_type == "kubernetes"} label="Service"><span class="font-mono text-sm">{@discovery_source.config["service_name"]}</span></:item>
                 <:item :if={@discovery_source.source_type == "kubernetes" && @discovery_source.config["port_name"]} label="Port Name"><span class="font-mono text-sm">{@discovery_source.config["port_name"]}</span></:item>
+                <:item :if={@discovery_source.source_type == "consul"} label="Consul Address"><span class="font-mono text-sm">{@discovery_source.config["consul_addr"]}</span></:item>
+                <:item :if={@discovery_source.source_type == "consul"} label="Service"><span class="font-mono text-sm">{@discovery_source.config["service_name"]}</span></:item>
+                <:item :if={@discovery_source.source_type == "consul" && @discovery_source.config["datacenter"]} label="Datacenter"><span class="font-mono text-sm">{@discovery_source.config["datacenter"]}</span></:item>
+                <:item :if={@discovery_source.source_type == "consul" && @discovery_source.config["tag"]} label="Tag"><span class="font-mono text-sm">{@discovery_source.config["tag"]}</span></:item>
                 <:item label="Status">
                   <span class={["badge badge-sm", sync_status_class(@discovery_source.last_sync_status)]}>
                     {sync_status_label(@discovery_source.last_sync_status)}
@@ -414,41 +431,64 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.Show do
                   >
                     <option value="dns_srv" selected={@discovery_source_type == "dns_srv"}>DNS/SRV</option>
                     <option value="kubernetes" selected={@discovery_source_type == "kubernetes"}>Kubernetes</option>
+                    <option value="consul" selected={@discovery_source_type == "consul"}>Consul</option>
                   </select>
                 </div>
 
-                <%= if @discovery_source_type == "dns_srv" do %>
-                  <div class="form-control">
-                    <label class="label"><span class="label-text text-xs">Hostname</span></label>
-                    <input
-                      type="text"
-                      name="hostname"
-                      required
-                      class="input input-bordered input-sm"
-                      placeholder="_http._tcp.api.internal"
-                    />
-                  </div>
-                <% else %>
-                  <div class="form-control">
-                    <label class="label"><span class="label-text text-xs">Namespace</span></label>
-                    <input type="text" name="namespace" required class="input input-bordered input-sm" placeholder="default" />
-                  </div>
-                  <div class="form-control">
-                    <label class="label"><span class="label-text text-xs">Service Name</span></label>
-                    <input type="text" name="service_name" required class="input input-bordered input-sm" placeholder="my-service" />
-                  </div>
-                  <div class="form-control">
-                    <label class="label"><span class="label-text text-xs">API URL (optional)</span></label>
-                    <input type="text" name="api_url" class="input input-bordered input-sm" placeholder="https://kubernetes.default.svc" />
-                  </div>
-                  <div class="form-control">
-                    <label class="label"><span class="label-text text-xs">Token (optional)</span></label>
-                    <input type="password" name="token" class="input input-bordered input-sm" placeholder="Bearer token or ${secrets.K8S_TOKEN}" />
-                  </div>
-                  <div class="form-control">
-                    <label class="label"><span class="label-text text-xs">Port Name (optional)</span></label>
-                    <input type="text" name="port_name" class="input input-bordered input-sm" placeholder="http" />
-                  </div>
+                <%= cond do %>
+                  <% @discovery_source_type == "dns_srv" -> %>
+                    <div class="form-control">
+                      <label class="label"><span class="label-text text-xs">Hostname</span></label>
+                      <input
+                        type="text"
+                        name="hostname"
+                        required
+                        class="input input-bordered input-sm"
+                        placeholder="_http._tcp.api.internal"
+                      />
+                    </div>
+                  <% @discovery_source_type == "consul" -> %>
+                    <div class="form-control">
+                      <label class="label"><span class="label-text text-xs">Consul Address</span></label>
+                      <input type="text" name="consul_addr" required class="input input-bordered input-sm" placeholder="http://consul:8500" />
+                    </div>
+                    <div class="form-control">
+                      <label class="label"><span class="label-text text-xs">Service Name</span></label>
+                      <input type="text" name="service_name" required class="input input-bordered input-sm" placeholder="my-service" />
+                    </div>
+                    <div class="form-control">
+                      <label class="label"><span class="label-text text-xs">Token (optional)</span></label>
+                      <input type="password" name="token" class="input input-bordered input-sm" placeholder="ACL token or ${secrets.CONSUL_TOKEN}" />
+                    </div>
+                    <div class="form-control">
+                      <label class="label"><span class="label-text text-xs">Datacenter (optional)</span></label>
+                      <input type="text" name="datacenter" class="input input-bordered input-sm" placeholder="dc1" />
+                    </div>
+                    <div class="form-control">
+                      <label class="label"><span class="label-text text-xs">Tag (optional)</span></label>
+                      <input type="text" name="tag" class="input input-bordered input-sm" placeholder="production" />
+                    </div>
+                  <% true -> %>
+                    <div class="form-control">
+                      <label class="label"><span class="label-text text-xs">Namespace</span></label>
+                      <input type="text" name="namespace" required class="input input-bordered input-sm" placeholder="default" />
+                    </div>
+                    <div class="form-control">
+                      <label class="label"><span class="label-text text-xs">Service Name</span></label>
+                      <input type="text" name="service_name" required class="input input-bordered input-sm" placeholder="my-service" />
+                    </div>
+                    <div class="form-control">
+                      <label class="label"><span class="label-text text-xs">API URL (optional)</span></label>
+                      <input type="text" name="api_url" class="input input-bordered input-sm" placeholder="https://kubernetes.default.svc" />
+                    </div>
+                    <div class="form-control">
+                      <label class="label"><span class="label-text text-xs">Token (optional)</span></label>
+                      <input type="password" name="token" class="input input-bordered input-sm" placeholder="Bearer token or ${secrets.K8S_TOKEN}" />
+                    </div>
+                    <div class="form-control">
+                      <label class="label"><span class="label-text text-xs">Port Name (optional)</span></label>
+                      <input type="text" name="port_name" class="input input-bordered input-sm" placeholder="http" />
+                    </div>
                 <% end %>
 
                 <div class="flex gap-2">
@@ -547,6 +587,36 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.Show do
           <button type="submit" class="btn btn-outline btn-xs">Add Target</button>
         </form>
       </.k8s_section>
+
+      <.k8s_section title="Circuit Breaker Health">
+        <div :if={@cb_statuses == []} class="text-center py-4 text-base-content/50 text-sm">
+          No circuit breaker data reported yet.
+        </div>
+        <table :if={@cb_statuses != []} class="table table-sm">
+          <thead>
+            <tr>
+              <th class="text-xs">Node</th>
+              <th class="text-xs">State</th>
+              <th class="text-xs">Failures</th>
+              <th class="text-xs">Successes</th>
+              <th class="text-xs">Last Trip</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr :for={cb <- @cb_statuses}>
+              <td class="font-mono text-sm">{cb.node && cb.node.name || "—"}</td>
+              <td>
+                <span class={["badge badge-xs", cb_state_class(cb.state)]}>
+                  {cb.state}
+                </span>
+              </td>
+              <td class="text-sm">{cb.failure_count}</td>
+              <td class="text-sm">{cb.success_count}</td>
+              <td class="text-sm">{format_sync_time(cb.last_trip_at)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </.k8s_section>
     </div>
     """
   end
@@ -571,6 +641,19 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.Show do
 
   defp trust_store_show_path(nil, project, ts),
     do: ~p"/projects/#{project.slug}/trust-stores/#{ts.id}"
+
+  defp put_source_type_attrs(attrs, "consul", params) do
+    config =
+      %{
+        "consul_addr" => params["consul_addr"],
+        "service_name" => params["service_name"]
+      }
+      |> maybe_put_config("token", params["token"])
+      |> maybe_put_config("datacenter", params["datacenter"])
+      |> maybe_put_config("tag", params["tag"])
+
+    Map.put(attrs, :config, config)
+  end
 
   defp put_source_type_attrs(attrs, "kubernetes", params) do
     config =
@@ -611,8 +694,14 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.Show do
     |> Enum.map_join(", ", fn {k, v} -> "#{k}: #{v}" end)
   end
 
+  defp cb_state_class("closed"), do: "badge-success"
+  defp cb_state_class("open"), do: "badge-error"
+  defp cb_state_class("half_open"), do: "badge-warning"
+  defp cb_state_class(_), do: "badge-ghost"
+
   defp discovery_type_label("dns_srv"), do: "DNS/SRV"
   defp discovery_type_label("kubernetes"), do: "Kubernetes"
+  defp discovery_type_label("consul"), do: "Consul"
   defp discovery_type_label(type), do: type
 
   defp sync_status_class("synced"), do: "badge-success"

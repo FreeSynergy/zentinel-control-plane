@@ -101,6 +101,28 @@ defmodule SentinelCp.Nodes do
       |> NodeHeartbeat.changeset(Map.merge(attrs, %{node_id: node.id}))
       |> Repo.insert!()
 
+      # Extract circuit breaker statuses if present
+      circuit_breakers = get_in(attrs, ["metrics", "circuit_breakers"]) ||
+                         get_in(attrs, [:metrics, :circuit_breakers]) || []
+
+      for cb <- circuit_breakers do
+        group_id = cb["upstream_group_id"] || cb[:upstream_group_id]
+
+        if group_id do
+          SentinelCp.Services.upsert_circuit_breaker_status(%{
+            upstream_group_id: group_id,
+            node_id: node.id,
+            state: cb["state"] || cb[:state] || "closed",
+            failure_count: cb["failure_count"] || cb[:failure_count] || 0,
+            success_count: cb["success_count"] || cb[:success_count] || 0,
+            last_failure_at: parse_optional_datetime(cb["last_failure_at"] || cb[:last_failure_at]),
+            last_success_at: parse_optional_datetime(cb["last_success_at"] || cb[:last_success_at]),
+            last_trip_at: parse_optional_datetime(cb["last_trip_at"] || cb[:last_trip_at]),
+            metadata: cb["metadata"] || cb[:metadata] || %{}
+          })
+        end
+      end
+
       updated_node
     end)
   end
@@ -881,4 +903,17 @@ defmodule SentinelCp.Nodes do
     # Version.compare can fail if versions aren't semver-compatible
     _ -> true
   end
+
+  defp parse_optional_datetime(nil), do: nil
+
+  defp parse_optional_datetime(%DateTime{} = dt), do: DateTime.truncate(dt, :second)
+
+  defp parse_optional_datetime(str) when is_binary(str) do
+    case DateTime.from_iso8601(str) do
+      {:ok, dt, _} -> DateTime.truncate(dt, :second)
+      _ -> nil
+    end
+  end
+
+  defp parse_optional_datetime(_), do: nil
 end

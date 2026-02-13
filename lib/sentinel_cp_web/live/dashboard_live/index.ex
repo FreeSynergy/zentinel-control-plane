@@ -65,6 +65,16 @@ defmodule SentinelCpWeb.DashboardLive.Index do
           value={to_string(@overview.drift_stats.drifted)}
           color={if @overview.drift_stats.drifted > 0, do: "warning", else: nil}
         />
+        <:stat
+          label="CB Open"
+          value={to_string(@overview.circuit_breaker_summary.open)}
+          color={if @overview.circuit_breaker_summary.open > 0, do: "error", else: nil}
+        />
+        <:stat
+          label="WAF Anomalies"
+          value={to_string(@overview.waf_anomaly_count)}
+          color={if @overview.waf_anomaly_count > 0, do: "warning", else: nil}
+        />
         <:stat label="Active Rollouts" value={to_string(@overview.active_rollouts)} color="warning" />
         <:stat
           label="Success Rate"

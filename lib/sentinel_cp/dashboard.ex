@@ -27,7 +27,9 @@ defmodule SentinelCp.Dashboard do
       drift_event_stats: Nodes.get_fleet_drift_event_stats(project_ids),
       active_rollouts: count_active_rollouts(project_ids),
       recent_bundles: count_recent_bundles(project_ids, 7),
-      deployment_success_rate: deployment_success_rate(project_ids)
+      deployment_success_rate: deployment_success_rate(project_ids),
+      circuit_breaker_summary: get_fleet_circuit_breaker_summary(project_ids),
+      waf_anomaly_count: count_active_waf_anomalies(project_ids)
     }
   end
 
@@ -86,6 +88,51 @@ defmodule SentinelCp.Dashboard do
   """
   def get_project_node_stats(project_id) do
     get_fleet_node_stats([project_id])
+  end
+
+  @doc """
+  Returns circuit breaker summary across multiple projects.
+  """
+  def get_fleet_circuit_breaker_summary(project_ids) when project_ids == [] do
+    %{total_groups: 0, open: 0, half_open: 0, closed: 0}
+  end
+
+  def get_fleet_circuit_breaker_summary(project_ids) do
+    alias SentinelCp.Services.{CircuitBreakerStatus, UpstreamGroup}
+
+    stats =
+      from(cb in CircuitBreakerStatus,
+        join: g in UpstreamGroup,
+        on: g.id == cb.upstream_group_id,
+        where: g.project_id in ^project_ids,
+        group_by: cb.state,
+        select: {cb.state, count(cb.id)}
+      )
+      |> Repo.all()
+      |> Map.new()
+
+    %{
+      total_groups: Enum.sum(Map.values(stats)),
+      open: Map.get(stats, "open", 0),
+      half_open: Map.get(stats, "half_open", 0),
+      closed: Map.get(stats, "closed", 0)
+    }
+  end
+
+  @doc """
+  Counts active WAF anomalies across multiple projects.
+  """
+  def count_active_waf_anomalies(project_ids) when project_ids == [], do: 0
+
+  def count_active_waf_anomalies(project_ids) do
+    alias SentinelCp.Analytics.WafAnomaly
+
+    from(a in WafAnomaly,
+      where: a.project_id in ^project_ids,
+      where: a.status == "active",
+      select: count(a.id)
+    )
+    |> Repo.one()
   end
 
   ## Private Helpers

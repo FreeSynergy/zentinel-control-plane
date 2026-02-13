@@ -282,6 +282,41 @@ defmodule SentinelCpWeb.Api.NodeController do
     end
   end
 
+  @doc """
+  POST /api/v1/nodes/:node_id/waf-events
+
+  Ingests WAF events from a node. Accepts a list of WAF event payloads.
+  Requires node authentication.
+  """
+  def waf_events(conn, %{"events" => events_list}) when is_list(events_list) do
+    node = conn.assigns.current_node
+
+    events_with_node =
+      Enum.map(events_list, fn event ->
+        event
+        |> Map.put("node_id", node.id)
+        |> Map.put("project_id", node.project_id)
+      end)
+
+    case Analytics.ingest_waf_events(events_with_node) do
+      {:ok, count} ->
+        conn
+        |> put_status(:ok)
+        |> json(%{status: "ok", events_ingested: count})
+
+      {:error, reason} ->
+        conn
+        |> put_status(:internal_server_error)
+        |> json(%{error: "Failed to ingest WAF events: #{inspect(reason)}"})
+    end
+  end
+
+  def waf_events(conn, _params) do
+    conn
+    |> put_status(:bad_request)
+    |> json(%{error: "Expected 'events' list in request body"})
+  end
+
   # Private helpers
 
   defp get_project(slug) do

@@ -36,6 +36,9 @@ defmodule SentinelCp.Application do
     SentinelCp.Analytics.PruneWorker.ensure_started()
     SentinelCp.Services.DiscoverySyncWorker.ensure_started()
     SentinelCp.Services.CertificateRenewalWorker.ensure_started()
+    SentinelCp.Analytics.WafEventPruneWorker.ensure_started()
+    SentinelCp.Analytics.WafBaselineWorker.ensure_started()
+    SentinelCp.Analytics.WafAnomalyWorker.ensure_started()
 
     result
   end

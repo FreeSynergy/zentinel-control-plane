@@ -57,6 +57,12 @@ config :sentinel_cp, :dns_resolver, SentinelCp.Services.DnsResolver.Mock
 # Use mock K8s resolver in tests
 config :sentinel_cp, :k8s_resolver, SentinelCp.Services.K8sResolver.Mock
 
+# Use mock Consul resolver in tests
+config :sentinel_cp, :consul_resolver, SentinelCp.Services.ConsulResolver.Mock
+
+# Use mock Vault client in tests
+config :sentinel_cp, :vault_client, SentinelCp.Secrets.VaultClient.Mock
+
 # Use mock ACME client in tests
 config :sentinel_cp, :acme_client, SentinelCp.Services.Acme.Client.Mock
 

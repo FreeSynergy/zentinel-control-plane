@@ -11,7 +11,7 @@ defmodule SentinelCp.Services.DiscoverySource do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  @source_types ~w(dns_srv kubernetes)
+  @source_types ~w(dns_srv kubernetes consul)
   @sync_statuses ~w(pending syncing synced error)
 
   schema "discovery_sources" do
@@ -66,6 +66,10 @@ defmodule SentinelCp.Services.DiscoverySource do
         changeset
         |> validate_k8s_config()
 
+      "consul" ->
+        changeset
+        |> validate_consul_config()
+
       _ ->
         # dns_srv (default)
         validate_required(changeset, [:hostname])
@@ -81,6 +85,22 @@ defmodule SentinelCp.Services.DiscoverySource do
   end
 
   defp validate_k8s_required_key(changeset, config, key) do
+    if is_binary(config[key]) and config[key] != "" do
+      changeset
+    else
+      add_error(changeset, :config, "must include #{key}")
+    end
+  end
+
+  defp validate_consul_config(changeset) do
+    config = get_field(changeset, :config) || %{}
+
+    changeset
+    |> validate_consul_required_key(config, "consul_addr")
+    |> validate_consul_required_key(config, "service_name")
+  end
+
+  defp validate_consul_required_key(changeset, config, key) do
     if is_binary(config[key]) and config[key] != "" do
       changeset
     else
