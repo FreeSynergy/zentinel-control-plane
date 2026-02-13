@@ -11,7 +11,7 @@ defmodule SentinelCp.Bundles.CompileWorker do
 
   alias SentinelCp.Bundles
   alias SentinelCp.Bundles.{Compiler, Risk, Signing, Storage}
-  alias SentinelCp.Audit
+  alias SentinelCp.{Audit, Services}
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"bundle_id" => bundle_id}}) do
@@ -91,8 +91,10 @@ defmodule SentinelCp.Bundles.CompileWorker do
   end
 
   defp compile_bundle(bundle) do
+    extra_files = build_extra_files(bundle.project_id)
+
     with {:ok, compiler_output} <- Compiler.validate(bundle.config_source),
-         {:ok, assembly} <- Compiler.assemble(bundle.id, bundle.config_source),
+         {:ok, assembly} <- Compiler.assemble(bundle.id, bundle.config_source, extra_files),
          storage_key <- Storage.storage_key(bundle.project_id, bundle.id),
          :ok <- Storage.upload(storage_key, assembly.archive) do
       {:ok,
@@ -104,6 +106,19 @@ defmodule SentinelCp.Bundles.CompileWorker do
          compiler_output: compiler_output,
          archive_data: assembly.archive
        }}
+    end
+  end
+
+  defp build_extra_files(project_id) do
+    case Services.get_internal_ca(project_id) do
+      nil ->
+        []
+
+      ca ->
+        [
+          {"internal-ca/ca.pem", ca.ca_cert_pem},
+          {"internal-ca/crl.pem", ca.crl_pem || ""}
+        ]
     end
   end
 end

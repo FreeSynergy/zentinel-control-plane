@@ -8,7 +8,7 @@ defmodule SentinelCp.Services do
 
   import Ecto.Query, warn: false
   alias SentinelCp.Repo
-  alias SentinelCp.Services.{Service, ServiceTemplate, ProjectConfig, UpstreamGroup, UpstreamTarget, Certificate, TrustStore, AuthPolicy, OpenApiSpec, DiscoverySource, DiscoverySync, Middleware, ServiceMiddleware}
+  alias SentinelCp.Services.{Service, ServiceTemplate, ProjectConfig, UpstreamGroup, UpstreamTarget, Certificate, TrustStore, AuthPolicy, OpenApiSpec, DiscoverySource, DiscoverySync, Middleware, ServiceMiddleware, InternalCa, IssuedCertificate, CACrypto, CertificateCrypto}
   alias SentinelCp.Secrets
 
   ## Services
@@ -403,6 +403,196 @@ defmodule SentinelCp.Services do
   """
   def delete_trust_store(%TrustStore{} = trust_store) do
     Repo.delete(trust_store)
+  end
+
+  ## Internal CA
+
+  @doc """
+  Gets the internal CA for a project, if one exists.
+  """
+  def get_internal_ca(project_id) do
+    Repo.get_by(InternalCa, project_id: project_id)
+  end
+
+  @doc """
+  Gets the internal CA for a project, raises if not found.
+  """
+  def get_internal_ca!(project_id) do
+    Repo.get_by!(InternalCa, project_id: project_id)
+  end
+
+  @doc """
+  Initializes a new internal CA for a project.
+
+  Generates a key pair and self-signed CA certificate, encrypts the key,
+  and inserts the InternalCa record.
+  """
+  def initialize_internal_ca(attrs) do
+    algorithm = attrs[:key_algorithm] || attrs["key_algorithm"] || "EC-P384"
+    subject_cn = attrs[:subject_cn] || attrs["subject_cn"] || "Internal CA"
+    validity_years = attrs[:validity_years] || attrs["validity_years"] || 10
+
+    key = CACrypto.generate_ca_key_pair(algorithm)
+    ca_cert_pem = CACrypto.generate_ca_certificate(key, subject_cn, validity_years)
+    key_pem = CACrypto.private_key_to_pem(key)
+    encrypted_key = CertificateCrypto.encrypt(key_pem)
+
+    {:ok, meta} = Certificate.parse_cert_pem(ca_cert_pem)
+
+    name = attrs[:name] || attrs["name"]
+    project_id = attrs[:project_id] || attrs["project_id"]
+
+    ca_attrs = %{
+      name: name,
+      project_id: project_id,
+      subject_cn: subject_cn,
+      key_algorithm: algorithm,
+      ca_cert_pem: ca_cert_pem,
+      ca_key_encrypted: encrypted_key,
+      not_before: meta.not_before,
+      not_after: meta.not_after,
+      fingerprint_sha256: meta.fingerprint_sha256
+    }
+
+    %InternalCa{}
+    |> InternalCa.create_changeset(ca_attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Destroys an internal CA (deletes the record and cascades to issued certs).
+  """
+  def destroy_internal_ca(%InternalCa{} = ca) do
+    Repo.delete(ca)
+  end
+
+  ## Issued Certificates
+
+  @doc """
+  Lists issued certificates for an internal CA, ordered by serial number.
+  """
+  def list_issued_certificates(internal_ca_id) do
+    from(c in IssuedCertificate,
+      where: c.internal_ca_id == ^internal_ca_id,
+      order_by: [asc: c.serial_number]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single issued certificate by ID.
+  """
+  def get_issued_certificate(id), do: Repo.get(IssuedCertificate, id)
+
+  @doc """
+  Gets a single issued certificate by ID, raises if not found.
+  """
+  def get_issued_certificate!(id), do: Repo.get!(IssuedCertificate, id)
+
+  @doc """
+  Issues a new client certificate from the internal CA.
+
+  Uses Ecto.Multi to atomically claim a serial number and insert the cert.
+  """
+  def issue_certificate(%InternalCa{} = ca, attrs) do
+    subject_cn = attrs[:subject_cn] || attrs["subject_cn"]
+    subject_ou = attrs[:subject_ou] || attrs["subject_ou"]
+    name = attrs[:name] || attrs["name"]
+    validity_days = attrs[:validity_days] || attrs["validity_days"] || 365
+
+    Ecto.Multi.new()
+    |> Ecto.Multi.one(:ca, fn _ ->
+      from(c in InternalCa, where: c.id == ^ca.id)
+    end)
+    |> Ecto.Multi.run(:issue, fn _repo, %{ca: locked_ca} ->
+      serial = locked_ca.next_serial
+
+      # Decrypt CA key
+      {:ok, ca_key_pem} = CertificateCrypto.decrypt(locked_ca.ca_key_encrypted)
+      {:ok, ca_key} = CACrypto.pem_to_private_key(ca_key_pem)
+
+      # Parse CA cert DER
+      [{:Certificate, ca_cert_der, _}] = :public_key.pem_decode(locked_ca.ca_cert_pem)
+
+      # Issue client cert
+      {cert_pem, key_pem} =
+        CACrypto.issue_client_certificate(ca_key, ca_cert_der, subject_cn, serial,
+          subject_ou: subject_ou,
+          validity_days: validity_days
+        )
+
+      encrypted_key = CertificateCrypto.encrypt(key_pem)
+      {:ok, meta} = Certificate.parse_cert_pem(cert_pem)
+
+      cert_attrs = %{
+        name: name,
+        serial_number: serial,
+        subject_cn: subject_cn,
+        subject_ou: subject_ou,
+        cert_pem: cert_pem,
+        key_pem_encrypted: encrypted_key,
+        not_before: meta.not_before,
+        not_after: meta.not_after,
+        fingerprint_sha256: meta.fingerprint_sha256,
+        internal_ca_id: locked_ca.id
+      }
+
+      %IssuedCertificate{}
+      |> IssuedCertificate.create_changeset(cert_attrs)
+      |> Repo.insert()
+    end)
+    |> Ecto.Multi.update(:increment_serial, fn %{ca: locked_ca} ->
+      InternalCa.serial_changeset(locked_ca, %{next_serial: locked_ca.next_serial + 1})
+    end)
+    |> Repo.transaction()
+    |> case do
+      {:ok, %{issue: cert}} -> {:ok, cert}
+      {:error, _step, changeset, _changes} -> {:error, changeset}
+    end
+  end
+
+  @doc """
+  Revokes an issued certificate and regenerates the CRL.
+  """
+  def revoke_issued_certificate(%IssuedCertificate{} = cert, reason \\ "unspecified") do
+    Repo.transaction(fn ->
+      # Revoke the certificate
+      {:ok, revoked} =
+        cert
+        |> IssuedCertificate.revoke_changeset(%{
+          revoked_at: DateTime.utc_now() |> DateTime.truncate(:second),
+          revoke_reason: reason
+        })
+        |> Repo.update()
+
+      # Regenerate CRL
+      ca = Repo.get!(InternalCa, cert.internal_ca_id)
+      regenerate_crl(ca)
+
+      revoked
+    end)
+  end
+
+  defp regenerate_crl(%InternalCa{} = ca) do
+    revoked_certs =
+      from(c in IssuedCertificate,
+        where: c.internal_ca_id == ^ca.id and c.status == "revoked",
+        select: {c.serial_number, c.revoked_at, c.revoke_reason}
+      )
+      |> Repo.all()
+
+    {:ok, ca_key_pem} = CertificateCrypto.decrypt(ca.ca_key_encrypted)
+    {:ok, ca_key} = CACrypto.pem_to_private_key(ca_key_pem)
+    [{:Certificate, ca_cert_der, _}] = :public_key.pem_decode(ca.ca_cert_pem)
+
+    crl_pem = CACrypto.generate_crl(ca_key, ca_cert_der, revoked_certs)
+
+    ca
+    |> InternalCa.crl_changeset(%{
+      crl_pem: crl_pem,
+      crl_updated_at: DateTime.utc_now() |> DateTime.truncate(:second)
+    })
+    |> Repo.update!()
   end
 
   ## Service Templates

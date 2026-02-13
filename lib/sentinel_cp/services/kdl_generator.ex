@@ -6,7 +6,7 @@ defmodule SentinelCp.Services.KdlGenerator do
   """
 
   alias SentinelCp.Services
-  alias SentinelCp.Services.{Service, ProjectConfig, UpstreamGroup, Certificate, TrustStore, AuthPolicy}
+  alias SentinelCp.Services.{Service, ProjectConfig, UpstreamGroup, Certificate, TrustStore, AuthPolicy, InternalCa}
 
   @doc """
   Generates KDL configuration for a project from its services and config.
@@ -30,6 +30,7 @@ defmodule SentinelCp.Services.KdlGenerator do
       certificates = Services.list_certificates(project_id)
       auth_policies = Services.list_auth_policies(project_id)
       trust_stores = Services.list_trust_stores(project_id)
+      internal_ca = Services.get_internal_ca(project_id)
 
       # Build middleware chain map: service_id -> [service_middlewares]
       middleware_chains =
@@ -41,7 +42,7 @@ defmodule SentinelCp.Services.KdlGenerator do
       # Resolve secret references if requested
       case maybe_resolve_secrets(services, opts) do
         {:ok, resolved_services} ->
-          kdl = build_kdl(resolved_services, config, upstream_groups, certificates, auth_policies, middleware_chains, trust_stores)
+          kdl = build_kdl(resolved_services, config, upstream_groups, certificates, auth_policies, middleware_chains, trust_stores, internal_ca)
           {:ok, kdl}
 
         {:error, _} = error ->
@@ -93,7 +94,7 @@ defmodule SentinelCp.Services.KdlGenerator do
   Generates KDL from provided services, config, and upstream groups (no DB access).
   Useful for testing.
   """
-  def build_kdl(services, %ProjectConfig{} = config, upstream_groups \\ [], certificates \\ [], auth_policies \\ [], middleware_chains \\ %{}, trust_stores \\ []) do
+  def build_kdl(services, %ProjectConfig{} = config, upstream_groups \\ [], certificates \\ [], auth_policies \\ [], middleware_chains \\ %{}, trust_stores \\ [], internal_ca \\ nil) do
     # Build lookup maps
     group_map =
       upstream_groups
@@ -137,8 +138,9 @@ defmodule SentinelCp.Services.KdlGenerator do
       "",
       build_tls_certificates(used_certs),
       build_trust_stores(used_trust_stores),
+      build_client_auth_block(internal_ca),
       build_upstream_groups(upstream_groups, trust_store_map),
-      build_routes(services, group_map, cert_map, auth_policy_map, middleware_chains),
+      build_routes(services, group_map, cert_map, auth_policy_map, middleware_chains, internal_ca),
       build_rate_limits(services)
     ]
 
@@ -198,6 +200,18 @@ defmodule SentinelCp.Services.KdlGenerator do
       "    store #{inspect(ts.slug)} {",
       "        ca_file \"/etc/sentinel/trust-stores/#{ts.slug}.pem\"",
       "    }"
+    ]
+  end
+
+  defp build_client_auth_block(nil), do: []
+
+  defp build_client_auth_block(%InternalCa{}) do
+    [
+      "client_auth {",
+      "    ca_file \"/etc/sentinel/internal-ca/ca.pem\"",
+      "    crl_file \"/etc/sentinel/internal-ca/crl.pem\"",
+      "}",
+      ""
     ]
   end
 
@@ -261,19 +275,19 @@ defmodule SentinelCp.Services.KdlGenerator do
     end
   end
 
-  defp build_routes(services, group_map, cert_map, auth_policy_map, middleware_chains) do
+  defp build_routes(services, group_map, cert_map, auth_policy_map, middleware_chains, internal_ca) do
     route_blocks =
       services
       |> Enum.map(fn service ->
         chain = Map.get(middleware_chains, service.id, [])
-        build_route(service, group_map, cert_map, auth_policy_map, chain)
+        build_route(service, group_map, cert_map, auth_policy_map, chain, internal_ca)
       end)
       |> Enum.intersperse([""])
 
     ["routes {"] ++ List.flatten(route_blocks) ++ ["}"]
   end
 
-  defp build_route(%Service{} = service, group_map, cert_map, auth_policy_map, middleware_chain) do
+  defp build_route(%Service{} = service, group_map, cert_map, auth_policy_map, middleware_chain, internal_ca) do
     lines = ["    route #{inspect(service.route_path)} {"]
 
     lines =
@@ -317,7 +331,7 @@ defmodule SentinelCp.Services.KdlGenerator do
     lines = lines ++ build_compression_block(service.compression)
     lines = lines ++ build_path_rewrite_block(service.path_rewrite)
     lines = lines ++ build_tls_ref(service.certificate_id, cert_map)
-    lines = lines ++ build_auth_block(service.auth_policy_id, auth_policy_map)
+    lines = lines ++ build_auth_block(service.auth_policy_id, auth_policy_map, internal_ca)
     lines = lines ++ build_security_block(service.security)
     lines = lines ++ build_request_transform_block(service.request_transform)
     lines = lines ++ build_response_transform_block(service.response_transform)
@@ -459,12 +473,24 @@ defmodule SentinelCp.Services.KdlGenerator do
     build_nested_map_block(rt, "response_transform", "        ")
   end
 
-  defp build_auth_block(nil, _auth_policy_map), do: []
+  defp build_auth_block(nil, _auth_policy_map, _internal_ca), do: []
 
-  defp build_auth_block(auth_policy_id, auth_policy_map) do
+  defp build_auth_block(auth_policy_id, auth_policy_map, internal_ca) do
     case Map.get(auth_policy_map, auth_policy_id) do
       nil ->
         []
+
+      %AuthPolicy{auth_type: "mtls"} = policy when not is_nil(internal_ca) ->
+        verify_mode = get_in(policy.config || %{}, ["verify_mode"]) || "require"
+
+        [
+          "        auth {",
+          "            type \"mtls\"",
+          "            verify_mode #{inspect(verify_mode)}",
+          "            ca_file \"/etc/sentinel/internal-ca/ca.pem\"",
+          "            crl_file \"/etc/sentinel/internal-ca/crl.pem\"",
+          "        }"
+        ]
 
       %AuthPolicy{} = policy ->
         lines = ["        auth {"]

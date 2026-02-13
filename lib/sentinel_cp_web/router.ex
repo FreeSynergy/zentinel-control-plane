@@ -170,6 +170,9 @@ defmodule SentinelCpWeb.Router do
     live "/projects/:project_slug/trust-stores/new", TrustStoresLive.New, :new
     live "/projects/:project_slug/trust-stores/:id", TrustStoresLive.Show, :show
     live "/projects/:project_slug/trust-stores/:id/edit", TrustStoresLive.Edit, :edit
+    live "/projects/:project_slug/internal-ca", InternalCaLive.Show, :show
+    live "/projects/:project_slug/internal-ca/certificates/new", InternalCaLive.IssueCertificate, :new
+    live "/projects/:project_slug/internal-ca/certificates/:id", InternalCaLive.CertificateShow, :show
     live "/projects/:project_slug/auth-policies", AuthPoliciesLive.Index, :index
     live "/projects/:project_slug/auth-policies/new", AuthPoliciesLive.New, :new
     live "/projects/:project_slug/auth-policies/:id", AuthPoliciesLive.Show, :show
@@ -272,6 +275,18 @@ defmodule SentinelCpWeb.Router do
     live "/orgs/:org_slug/projects/:project_slug/trust-stores/:id/edit",
          TrustStoresLive.Edit,
          :edit
+
+    live "/orgs/:org_slug/projects/:project_slug/internal-ca",
+         InternalCaLive.Show,
+         :show
+
+    live "/orgs/:org_slug/projects/:project_slug/internal-ca/certificates/new",
+         InternalCaLive.IssueCertificate,
+         :new
+
+    live "/orgs/:org_slug/projects/:project_slug/internal-ca/certificates/:id",
+         InternalCaLive.CertificateShow,
+         :show
 
     live "/orgs/:org_slug/projects/:project_slug/auth-policies",
          AuthPoliciesLive.Index,
@@ -474,6 +489,13 @@ defmodule SentinelCpWeb.Router do
       get "/certificates/:id", CertificateController, :show
       get "/certificates/:id/download", CertificateController, :download
 
+      get "/internal-ca", InternalCaController, :show
+      get "/internal-ca/ca.pem", InternalCaController, :download_ca
+      get "/internal-ca/crl.pem", InternalCaController, :download_crl
+      get "/internal-ca/certificates", InternalCaController, :list_certificates
+      get "/internal-ca/certificates/:id", InternalCaController, :show_certificate
+      get "/internal-ca/certificates/:id/download", InternalCaController, :download_certificate
+
       get "/trust-stores", TrustStoreController, :index
       get "/trust-stores/:id", TrustStoreController, :show
       get "/trust-stores/:id/download", TrustStoreController, :download
@@ -524,6 +546,11 @@ defmodule SentinelCpWeb.Router do
       post "/certificates", CertificateController, :create
       put "/certificates/:id", CertificateController, :update
       delete "/certificates/:id", CertificateController, :delete
+
+      post "/internal-ca", InternalCaController, :initialize
+      delete "/internal-ca", InternalCaController, :destroy
+      post "/internal-ca/certificates", InternalCaController, :issue_certificate
+      post "/internal-ca/certificates/:id/revoke", InternalCaController, :revoke_certificate
 
       post "/trust-stores", TrustStoreController, :create
       put "/trust-stores/:id", TrustStoreController, :update

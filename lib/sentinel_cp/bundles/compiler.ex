@@ -40,7 +40,7 @@ defmodule SentinelCp.Bundles.Compiler do
   Returns {:ok, %{archive: binary, checksum: string, size: integer, manifest: map}}
   or {:error, reason}.
   """
-  def assemble(bundle_id, config_source) when is_binary(config_source) do
+  def assemble(bundle_id, config_source, extra_files \\ []) when is_binary(config_source) do
     tmpdir = Path.join(System.tmp_dir!(), "sentinel-bundle-#{bundle_id}")
     File.mkdir_p!(tmpdir)
 
@@ -49,27 +49,46 @@ defmodule SentinelCp.Bundles.Compiler do
       config_path = Path.join(tmpdir, "sentinel.kdl")
       File.write!(config_path, config_source)
 
+      # Write extra files
+      extra_file_entries =
+        Enum.map(extra_files, fn {relative_path, content} ->
+          full_path = Path.join(tmpdir, relative_path)
+          File.mkdir_p!(Path.dirname(full_path))
+          File.write!(full_path, content || "")
+
+          %{
+            "path" => relative_path,
+            "checksum" => checksum(content || ""),
+            "size" => byte_size(content || "")
+          }
+        end)
+
       # Create manifest
       config_checksum = checksum(config_source)
 
       manifest = %{
         "bundle_id" => bundle_id,
         "assembled_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
-        "files" => [
-          %{
-            "path" => "sentinel.kdl",
-            "checksum" => config_checksum,
-            "size" => byte_size(config_source)
-          }
-        ]
+        "files" =>
+          [
+            %{
+              "path" => "sentinel.kdl",
+              "checksum" => config_checksum,
+              "size" => byte_size(config_source)
+            }
+          ] ++ extra_file_entries
       }
 
       manifest_json = Jason.encode!(manifest, pretty: true)
       manifest_path = Path.join(tmpdir, "manifest.json")
       File.write!(manifest_path, manifest_json)
 
+      # Build file list for archive
+      extra_paths = Enum.map(extra_files, fn {path, _} -> path end)
+      all_files = ["sentinel.kdl"] ++ extra_paths ++ ["manifest.json"]
+
       # Create tar.zst archive
-      archive = create_archive(tmpdir, ["sentinel.kdl", "manifest.json"])
+      archive = create_archive(tmpdir, all_files)
       archive_checksum = checksum(archive)
 
       {:ok,
