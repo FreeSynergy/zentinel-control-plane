@@ -462,6 +462,9 @@ defmodule SentinelCpWeb.Router do
 
       get "/secrets", SecretController, :index
       get "/secrets/:id", SecretController, :show
+
+      get "/config/export", ConfigExportController, :export
+      post "/config/diff", ConfigExportController, :diff
     end
   end
 
@@ -515,6 +518,8 @@ defmodule SentinelCpWeb.Router do
       put "/secrets/:id", SecretController, :update
       delete "/secrets/:id", SecretController, :delete
       post "/secrets/:id/rotate", SecretController, :rotate
+
+      post "/config/import", ConfigExportController, :import
     end
   end
 

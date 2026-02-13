@@ -59,16 +59,9 @@ defmodule SentinelCp.ConfigExport do
   """
   def export_yaml(project_id) do
     case export(project_id) do
-      {:ok, config} -> {:ok, YamlElixir.dump(config)}
+      {:ok, config} -> {:ok, Ymlr.document!(config)}
       error -> error
     end
-  rescue
-    _ ->
-      # Fallback to JSON if YAML dump is not available
-      case export(project_id) do
-        {:ok, config} -> {:ok, Jason.encode!(config, pretty: true)}
-        error -> error
-      end
   end
 
   @doc """

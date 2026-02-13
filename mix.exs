@@ -97,6 +97,7 @@ defmodule SentinelCp.MixProject do
       {:typed_struct, "~> 0.3"},
       {:nimble_options, "~> 1.1"},
       {:yaml_elixir, "~> 2.11"},
+      {:ymlr, "~> 5.0"},
 
       # Dev/Test tools
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
