@@ -62,7 +62,7 @@ defmodule SentinelCp.Services.KdlGenerator do
   defp resolve_service_configs(services, project_id, environment) do
     config_fields = [:headers, :cors, :cache, :retry, :rate_limit, :health_check,
                      :access_control, :compression, :security, :request_transform,
-                     :response_transform, :path_rewrite]
+                     :response_transform, :path_rewrite, :inference]
 
     Enum.reduce_while(services, {:ok, []}, fn service, {:ok, acc} ->
       case resolve_service_config_maps(service, config_fields, project_id, environment) do
@@ -221,6 +221,13 @@ defmodule SentinelCp.Services.KdlGenerator do
     lines = ["    route #{inspect(service.route_path)} {"]
 
     lines =
+      if service.service_type && service.service_type != "standard" do
+        lines ++ ["        service-type #{inspect(service.service_type)}"]
+      else
+        lines
+      end
+
+    lines =
       cond do
         service.upstream_url ->
           lines ++ ["        upstream #{inspect(service.upstream_url)}"]
@@ -259,6 +266,7 @@ defmodule SentinelCp.Services.KdlGenerator do
     lines = lines ++ build_request_transform_block(service.request_transform)
     lines = lines ++ build_response_transform_block(service.response_transform)
     lines = lines ++ build_traffic_split_block(service.traffic_split, group_map)
+    lines = lines ++ build_inference_block(service.inference)
 
     # Append middleware chain blocks (after inline fields)
     lines = lines ++ build_middleware_chain(middleware_chain)
@@ -464,6 +472,143 @@ defmodule SentinelCp.Services.KdlGenerator do
       nil -> group_id
       group -> group.slug
     end
+  end
+
+  defp build_inference_block(inf) when inf == %{} or inf == nil, do: []
+
+  defp build_inference_block(inf) do
+    lines = ["        inference {"]
+
+    # Provider
+    lines =
+      case Map.get(inf, "provider") do
+        nil -> lines
+        provider -> lines ++ ["            provider #{inspect(provider)}"]
+      end
+
+    # Token rate limit
+    lines = lines ++ build_inference_sub_block(Map.get(inf, "token_rate_limit"), "rate-limit")
+
+    # Token budget
+    lines = lines ++ build_inference_sub_block(Map.get(inf, "token_budget"), "budget")
+
+    # Cost attribution
+    lines = lines ++ build_cost_attribution_block(Map.get(inf, "cost_attribution"))
+
+    # Model routing
+    lines = lines ++ build_model_routing_block(Map.get(inf, "model_routing"))
+
+    # Guardrails
+    lines = lines ++ build_guardrails_block(Map.get(inf, "guardrails"))
+
+    # Fallback
+    lines = lines ++ build_fallback_block(Map.get(inf, "fallback"))
+
+    # Streaming
+    lines = lines ++ build_inference_sub_block(Map.get(inf, "streaming"), "streaming")
+
+    lines ++ ["        }"]
+  end
+
+  defp build_inference_sub_block(nil, _name), do: []
+  defp build_inference_sub_block(map, _name) when map == %{}, do: []
+
+  defp build_inference_sub_block(map, name) do
+    inner =
+      map
+      |> Enum.sort_by(fn {k, _} -> k end)
+      |> Enum.map(fn {key, value} -> "                #{key} #{format_value(value)}" end)
+
+    ["            #{name} {"] ++ inner ++ ["            }"]
+  end
+
+  defp build_cost_attribution_block(nil), do: []
+  defp build_cost_attribution_block(ca) when ca == %{}, do: []
+
+  defp build_cost_attribution_block(ca) do
+    lines = ["            cost-attribution {"]
+
+    lines =
+      case Map.get(ca, "currency") do
+        nil -> lines
+        currency -> lines ++ ["                currency #{inspect(currency)}"]
+      end
+
+    models = Map.get(ca, "models", [])
+
+    model_lines =
+      Enum.flat_map(models, fn model ->
+        pattern = Map.get(model, "pattern", "*")
+        inner =
+          model
+          |> Map.drop(["pattern"])
+          |> Enum.sort_by(fn {k, _} -> k end)
+          |> Enum.map(fn {key, value} -> "                    #{key} #{format_value(value)}" end)
+
+        ["                model #{inspect(pattern)} {"] ++ inner ++ ["                }"]
+      end)
+
+    lines ++ model_lines ++ ["            }"]
+  end
+
+  defp build_model_routing_block(nil), do: []
+  defp build_model_routing_block(mr) when mr == %{}, do: []
+
+  defp build_model_routing_block(mr) do
+    lines = ["            model-routing {"]
+
+    routes = Map.get(mr, "routes", [])
+
+    route_lines =
+      Enum.flat_map(routes, fn route ->
+        pattern = Map.get(route, "pattern", "*")
+        inner =
+          route
+          |> Map.drop(["pattern"])
+          |> Enum.sort_by(fn {k, _} -> k end)
+          |> Enum.map(fn {key, value} -> "                    #{key} #{format_value(value)}" end)
+
+        ["                route #{inspect(pattern)} {"] ++ inner ++ ["                }"]
+      end)
+
+    lines ++ route_lines ++ ["            }"]
+  end
+
+  defp build_guardrails_block(nil), do: []
+  defp build_guardrails_block(gr) when gr == %{}, do: []
+
+  defp build_guardrails_block(gr) do
+    lines = ["            guardrails {"]
+
+    lines = lines ++ build_inference_sub_block(Map.get(gr, "prompt_injection"), "prompt-injection")
+    lines = lines ++ build_inference_sub_block(Map.get(gr, "pii_detection"), "pii-detection")
+
+    lines ++ ["            }"]
+  end
+
+  defp build_fallback_block(nil), do: []
+  defp build_fallback_block(fb) when fb == %{}, do: []
+
+  defp build_fallback_block(fb) do
+    lines = ["            fallback {"]
+
+    mappings = Map.get(fb, "model_mapping", [])
+
+    mapping_lines =
+      Enum.map(mappings, fn mapping ->
+        from = Map.get(mapping, "from", "")
+        to = Map.get(mapping, "to", "")
+        "                model-mapping #{inspect(from)} #{inspect(to)}"
+      end)
+
+    # Add other top-level fallback keys
+    other_lines =
+      fb
+      |> Map.drop(["model_mapping"])
+      |> Enum.sort_by(fn {k, _} -> k end)
+      |> Enum.map(fn {key, value} -> "                #{key} #{format_value(value)}" end)
+
+    lines ++ other_lines ++ mapping_lines ++ ["            }"]
   end
 
   defp build_middleware_chain([]), do: []

@@ -103,6 +103,26 @@ defmodule SentinelCp.Services.BuiltInTemplates do
       },
       is_builtin: true,
       version: 1
+    },
+    %{
+      name: "LLM Inference Gateway",
+      category: "inference",
+      description: "AI inference gateway with token rate limiting, cost tracking, and streaming.",
+      template_data: %{
+        "upstream_url" => "http://inference-backend:8080",
+        "route_path" => "/v1/*",
+        "service_type" => "inference",
+        "timeout_seconds" => 300,
+        "inference" => %{
+          "provider" => "openai",
+          "token_rate_limit" => %{"tokens_per_minute" => 100_000, "burst_allowance" => 1.5},
+          "token_budget" => %{"period" => "monthly", "limit" => 10_000_000, "alert_threshold" => 0.8, "enforcement" => "block"},
+          "cost_attribution" => %{"currency" => "USD", "models" => [%{"pattern" => "*", "input_cost_per_1k" => 0.01, "output_cost_per_1k" => 0.03}]},
+          "streaming" => %{"enabled" => true, "format" => "sse"}
+        }
+      },
+      is_builtin: true,
+      version: 1
     }
   ]
 

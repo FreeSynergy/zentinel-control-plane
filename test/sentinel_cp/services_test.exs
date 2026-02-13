@@ -536,6 +536,106 @@ defmodule SentinelCp.ServicesTest do
     end
   end
 
+  describe "inference service" do
+    test "creates inference service with valid config" do
+      project = project_fixture()
+
+      inference = %{
+        "provider" => "openai",
+        "token_rate_limit" => %{"tokens_per_minute" => 100_000},
+        "streaming" => %{"enabled" => true, "format" => "sse"}
+      }
+
+      assert {:ok, %Service{} = service} =
+               Services.create_service(%{
+                 project_id: project.id,
+                 name: "LLM Gateway",
+                 route_path: "/v1/*",
+                 upstream_url: "http://inference:8080",
+                 service_type: "inference",
+                 inference: inference
+               })
+
+      assert service.service_type == "inference"
+      assert service.inference["provider"] == "openai"
+    end
+
+    test "rejects inference service without provider" do
+      project = project_fixture()
+
+      assert {:error, changeset} =
+               Services.create_service(%{
+                 project_id: project.id,
+                 name: "Bad Inference",
+                 route_path: "/v1/*",
+                 upstream_url: "http://inference:8080",
+                 service_type: "inference",
+                 inference: %{"token_rate_limit" => %{"tokens_per_minute" => 1000}}
+               })
+
+      assert %{inference: [msg]} = errors_on(changeset)
+      assert msg =~ "valid provider"
+    end
+
+    test "rejects inference service with empty inference config" do
+      project = project_fixture()
+
+      assert {:error, changeset} =
+               Services.create_service(%{
+                 project_id: project.id,
+                 name: "Empty Inference",
+                 route_path: "/v1/*",
+                 upstream_url: "http://inference:8080",
+                 service_type: "inference",
+                 inference: %{}
+               })
+
+      assert %{inference: [msg]} = errors_on(changeset)
+      assert msg =~ "required when service_type is inference"
+    end
+
+    test "rejects non-empty inference config on standard service" do
+      project = project_fixture()
+
+      assert {:error, changeset} =
+               Services.create_service(%{
+                 project_id: project.id,
+                 name: "Standard With Inference",
+                 route_path: "/api/*",
+                 upstream_url: "http://api:8080",
+                 service_type: "standard",
+                 inference: %{"provider" => "openai"}
+               })
+
+      assert %{inference: [msg]} = errors_on(changeset)
+      assert msg =~ "must be empty for standard services"
+    end
+
+    test "filters services by service_type" do
+      project = project_fixture()
+
+      _standard = service_fixture(%{project: project, name: "Standard API"})
+
+      {:ok, _inference} =
+        Services.create_service(%{
+          project_id: project.id,
+          name: "LLM Service",
+          route_path: "/v1/*",
+          upstream_url: "http://inference:8080",
+          service_type: "inference",
+          inference: %{"provider" => "openai"}
+        })
+
+      inference_services = Services.list_services(project.id, service_type: "inference")
+      assert length(inference_services) == 1
+      assert hd(inference_services).name == "LLM Service"
+
+      standard_services = Services.list_services(project.id, service_type: "standard")
+      assert length(standard_services) == 1
+      assert hd(standard_services).name == "Standard API"
+    end
+  end
+
   describe "upstream group with circuit_breaker" do
     test "creates upstream group with circuit_breaker config" do
       project = project_fixture()

@@ -34,6 +34,8 @@ defmodule SentinelCp.Services.Service do
     field :request_transform, :map, default: %{}
     field :response_transform, :map, default: %{}
     field :traffic_split, :map, default: %{}
+    field :service_type, :string, default: "standard"
+    field :inference, :map, default: %{}
     field :redirect_url, :string
 
     belongs_to :project, SentinelCp.Projects.Project
@@ -74,6 +76,8 @@ defmodule SentinelCp.Services.Service do
       :request_transform,
       :response_transform,
       :traffic_split,
+      :service_type,
+      :inference,
       :redirect_url,
       :upstream_group_id,
       :certificate_id,
@@ -86,6 +90,8 @@ defmodule SentinelCp.Services.Service do
     |> validate_length(:name, min: 1, max: 100)
     |> validate_route_path()
     |> validate_route_type()
+    |> validate_inclusion(:service_type, ~w(standard inference))
+    |> validate_inference_config()
     |> generate_slug()
     |> validate_slug()
     |> unique_constraint([:project_id, :slug], error_key: :slug)
@@ -117,6 +123,8 @@ defmodule SentinelCp.Services.Service do
       :request_transform,
       :response_transform,
       :traffic_split,
+      :service_type,
+      :inference,
       :redirect_url,
       :upstream_group_id,
       :certificate_id,
@@ -128,6 +136,34 @@ defmodule SentinelCp.Services.Service do
     |> validate_length(:name, min: 1, max: 100)
     |> validate_route_path()
     |> validate_route_type()
+    |> validate_inclusion(:service_type, ~w(standard inference))
+    |> validate_inference_config()
+  end
+
+  defp validate_inference_config(changeset) do
+    service_type = get_field(changeset, :service_type)
+    inference = get_field(changeset, :inference)
+
+    case service_type do
+      "inference" ->
+        cond do
+          not is_map(inference) or inference == %{} ->
+            add_error(changeset, :inference, "is required when service_type is inference")
+
+          Map.get(inference, "provider") not in ~w(openai anthropic generic) ->
+            add_error(changeset, :inference, "must include a valid provider (openai, anthropic, generic)")
+
+          true ->
+            changeset
+        end
+
+      _ ->
+        if is_map(inference) and inference != %{} do
+          add_error(changeset, :inference, "must be empty for standard services")
+        else
+          changeset
+        end
+    end
   end
 
   defp validate_route_path(changeset) do

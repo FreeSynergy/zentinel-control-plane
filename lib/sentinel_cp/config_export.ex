@@ -199,7 +199,8 @@ defmodule SentinelCp.ConfigExport do
         "route_path" => s.route_path,
         "upstream_url" => s.upstream_url,
         "enabled" => s.enabled,
-        "position" => s.position
+        "position" => s.position,
+        "service_type" => s.service_type
       }
 
       # Include non-default config maps
@@ -212,6 +213,7 @@ defmodule SentinelCp.ConfigExport do
       |> maybe_add("retry", s.retry, %{})
       |> maybe_add("compression", s.compression, %{})
       |> maybe_add("security", s.security, %{})
+      |> maybe_add("inference", s.inference, %{})
     end)
   end
 
@@ -291,7 +293,9 @@ defmodule SentinelCp.ConfigExport do
           route_path: svc_data["route_path"],
           upstream_url: svc_data["upstream_url"],
           enabled: Map.get(svc_data, "enabled", true),
-          position: Map.get(svc_data, "position", 0)
+          position: Map.get(svc_data, "position", 0),
+          service_type: Map.get(svc_data, "service_type", "standard"),
+          inference: Map.get(svc_data, "inference", %{})
         }
 
         case SentinelCp.Services.create_service(attrs) do

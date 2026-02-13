@@ -25,6 +25,7 @@ defmodule SentinelCp.Services do
     query =
       Enum.reduce(opts, query, fn
         {:enabled, enabled}, q -> where(q, [s], s.enabled == ^enabled)
+        {:service_type, type}, q -> where(q, [s], s.service_type == ^type)
         _, q -> q
       end)
 
@@ -781,7 +782,8 @@ defmodule SentinelCp.Services do
       status: if(service.enabled, do: "enabled", else: "disabled"),
       metadata: %{
         route_path: service.route_path,
-        upstream_url: service.upstream_url
+        upstream_url: service.upstream_url,
+        service_type: service.service_type
       }
     }
   end

@@ -148,6 +148,56 @@ defmodule SentinelCp.ConfigExportTest do
     end
   end
 
+  describe "inference service export/import" do
+    test "exports service_type and inference config", %{project: project} do
+      create_inference_service(project, "llm-gateway", "/v1/*")
+
+      {:ok, config} = ConfigExport.export(project.id)
+
+      svc = hd(config["services"])
+      assert svc["service_type"] == "inference"
+      assert svc["inference"]["provider"] == "openai"
+    end
+
+    test "imports service_type and inference config", %{project: project} do
+      config = %{
+        "services" => [
+          %{
+            "name" => "imported-llm",
+            "route_path" => "/v1/*",
+            "upstream_url" => "http://inference:8080",
+            "service_type" => "inference",
+            "inference" => %{"provider" => "anthropic"}
+          }
+        ]
+      }
+
+      {:ok, summary} = ConfigExport.import_config(project.id, config)
+      assert summary.created == 1
+
+      services = SentinelCp.Services.list_services(project.id)
+      svc = Enum.find(services, &(&1.name == "imported-llm"))
+      assert svc.service_type == "inference"
+      assert svc.inference["provider"] == "anthropic"
+    end
+
+    test "round-trips inference service", %{project: project} do
+      create_inference_service(project, "llm-roundtrip", "/v1/*")
+
+      {:ok, config} = ConfigExport.export(project.id)
+
+      # Import into a new project — should create
+      project2 = SentinelCp.ProjectsFixtures.project_fixture()
+      {:ok, summary} = ConfigExport.import_config(project2.id, config)
+      assert summary.created >= 1
+
+      services = SentinelCp.Services.list_services(project2.id)
+      svc = Enum.find(services, &(&1.name == "llm-roundtrip"))
+      assert svc.service_type == "inference"
+      assert svc.inference["provider"] == "openai"
+    end
+  end
+
   # ─── 18.4 GraphQL Schema ────────────────────────────────────────
 
   describe "GraphQL schema" do
@@ -213,6 +263,20 @@ defmodule SentinelCp.ConfigExportTest do
         route_path: route_path
       })
       |> Repo.insert()
+
+    service
+  end
+
+  defp create_inference_service(project, name, route_path) do
+    {:ok, service} =
+      SentinelCp.Services.create_service(%{
+        project_id: project.id,
+        name: name,
+        route_path: route_path,
+        upstream_url: "http://inference:8080",
+        service_type: "inference",
+        inference: %{"provider" => "openai"}
+      })
 
     service
   end

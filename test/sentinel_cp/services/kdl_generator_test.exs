@@ -1011,6 +1011,175 @@ defmodule SentinelCp.Services.KdlGeneratorTest do
     end
   end
 
+  describe "inference KDL" do
+    test "generates service-type and inference block for inference service" do
+      services = [
+        %Service{
+          name: "LLM Gateway",
+          slug: "llm-gateway",
+          route_path: "/v1/*",
+          upstream_url: "http://inference:8080",
+          service_type: "inference",
+          inference: %{
+            "provider" => "openai",
+            "token_rate_limit" => %{"tokens_per_minute" => 100_000, "burst_allowance" => 1.5},
+            "token_budget" => %{"period" => "monthly", "limit" => 10_000_000},
+            "cost_attribution" => %{
+              "currency" => "USD",
+              "models" => [%{"pattern" => "*", "input_cost_per_1k" => 0.01, "output_cost_per_1k" => 0.03}]
+            },
+            "streaming" => %{"enabled" => true, "format" => "sse"}
+          },
+          retry: %{},
+          cache: %{},
+          rate_limit: %{},
+          health_check: %{},
+          headers: %{},
+          cors: %{},
+          access_control: %{},
+          compression: %{},
+          path_rewrite: %{},
+          security: %{},
+          request_transform: %{},
+          response_transform: %{},
+          traffic_split: %{}
+        }
+      ]
+
+      kdl = KdlGenerator.build_kdl(services, default_config())
+      assert kdl =~ ~s(service-type "inference")
+      assert kdl =~ "inference {"
+      assert kdl =~ ~s(provider "openai")
+      assert kdl =~ "rate-limit {"
+      assert kdl =~ "tokens_per_minute 100000"
+      assert kdl =~ "burst_allowance 1.5"
+      assert kdl =~ "budget {"
+      assert kdl =~ "cost-attribution {"
+      assert kdl =~ ~s(currency "USD")
+      assert kdl =~ ~s(model "*" {)
+      assert kdl =~ "streaming {"
+    end
+
+    test "does not generate service-type for standard services" do
+      services = [
+        %Service{
+          name: "API",
+          slug: "api",
+          route_path: "/api/*",
+          upstream_url: "http://api:8080",
+          service_type: "standard",
+          inference: %{},
+          retry: %{},
+          cache: %{},
+          rate_limit: %{},
+          health_check: %{},
+          headers: %{}
+        }
+      ]
+
+      kdl = KdlGenerator.build_kdl(services, default_config())
+      refute kdl =~ "service-type"
+      refute kdl =~ "inference {"
+    end
+
+    test "does not generate inference block when inference is nil" do
+      services = [
+        %Service{
+          name: "API",
+          slug: "api",
+          route_path: "/api/*",
+          upstream_url: "http://api:8080",
+          service_type: "standard",
+          inference: nil,
+          retry: %{},
+          cache: %{},
+          rate_limit: %{},
+          health_check: %{},
+          headers: %{}
+        }
+      ]
+
+      kdl = KdlGenerator.build_kdl(services, default_config())
+      refute kdl =~ "inference {"
+    end
+
+    test "generates guardrails sub-block" do
+      services = [
+        %Service{
+          name: "Guarded LLM",
+          slug: "guarded-llm",
+          route_path: "/v1/*",
+          upstream_url: "http://inference:8080",
+          service_type: "inference",
+          inference: %{
+            "provider" => "anthropic",
+            "guardrails" => %{
+              "prompt_injection" => %{"enabled" => true, "action" => "block"},
+              "pii_detection" => %{"enabled" => true, "action" => "redact"}
+            }
+          },
+          retry: %{},
+          cache: %{},
+          rate_limit: %{},
+          health_check: %{},
+          headers: %{},
+          cors: %{},
+          access_control: %{},
+          compression: %{},
+          path_rewrite: %{},
+          security: %{},
+          request_transform: %{},
+          response_transform: %{},
+          traffic_split: %{}
+        }
+      ]
+
+      kdl = KdlGenerator.build_kdl(services, default_config())
+      assert kdl =~ "guardrails {"
+      assert kdl =~ "prompt-injection {"
+      assert kdl =~ "pii-detection {"
+    end
+
+    test "generates fallback sub-block with model-mapping" do
+      services = [
+        %Service{
+          name: "Fallback LLM",
+          slug: "fallback-llm",
+          route_path: "/v1/*",
+          upstream_url: "http://inference:8080",
+          service_type: "inference",
+          inference: %{
+            "provider" => "generic",
+            "fallback" => %{
+              "model_mapping" => [
+                %{"from" => "gpt-4", "to" => "claude-3-opus"},
+                %{"from" => "gpt-3.5-turbo", "to" => "claude-3-haiku"}
+              ]
+            }
+          },
+          retry: %{},
+          cache: %{},
+          rate_limit: %{},
+          health_check: %{},
+          headers: %{},
+          cors: %{},
+          access_control: %{},
+          compression: %{},
+          path_rewrite: %{},
+          security: %{},
+          request_transform: %{},
+          response_transform: %{},
+          traffic_split: %{}
+        }
+      ]
+
+      kdl = KdlGenerator.build_kdl(services, default_config())
+      assert kdl =~ "fallback {"
+      assert kdl =~ ~s(model-mapping "gpt-4" "claude-3-opus")
+      assert kdl =~ ~s(model-mapping "gpt-3.5-turbo" "claude-3-haiku")
+    end
+  end
+
   describe "generate/1" do
     test "returns error when no services exist" do
       project = project_fixture()
