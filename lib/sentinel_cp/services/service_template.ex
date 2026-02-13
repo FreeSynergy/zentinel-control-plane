@@ -11,7 +11,7 @@ defmodule SentinelCp.Services.ServiceTemplate do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  @categories ~w(api web websocket static auth utility inference)
+  @categories ~w(api web websocket static auth utility inference grpc graphql streaming)
 
   schema "service_templates" do
     field :name, :string

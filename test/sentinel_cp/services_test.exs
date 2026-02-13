@@ -608,7 +608,7 @@ defmodule SentinelCp.ServicesTest do
                })
 
       assert %{inference: [msg]} = errors_on(changeset)
-      assert msg =~ "must be empty for standard services"
+      assert msg =~ "must be empty"
     end
 
     test "filters services by service_type" do
@@ -633,6 +633,243 @@ defmodule SentinelCp.ServicesTest do
       standard_services = Services.list_services(project.id, service_type: "standard")
       assert length(standard_services) == 1
       assert hd(standard_services).name == "Standard API"
+    end
+  end
+
+  describe "grpc service" do
+    test "creates grpc service with valid config" do
+      project = project_fixture()
+
+      grpc = %{
+        "max_message_size" => 4_194_304,
+        "reflection" => "true",
+        "health_check_service" => "grpc.health.v1.Health"
+      }
+
+      assert {:ok, %Service{} = service} =
+               Services.create_service(%{
+                 project_id: project.id,
+                 name: "gRPC Gateway",
+                 route_path: "/grpc/*",
+                 upstream_url: "http://grpc:9090",
+                 service_type: "grpc",
+                 grpc: grpc
+               })
+
+      assert service.service_type == "grpc"
+      assert service.grpc == grpc
+    end
+
+    test "rejects grpc service with empty grpc config" do
+      project = project_fixture()
+
+      assert {:error, changeset} =
+               Services.create_service(%{
+                 project_id: project.id,
+                 name: "Bad gRPC",
+                 route_path: "/grpc/*",
+                 upstream_url: "http://grpc:9090",
+                 service_type: "grpc",
+                 grpc: %{}
+               })
+
+      assert %{grpc: [msg]} = errors_on(changeset)
+      assert msg =~ "required when service_type is grpc"
+    end
+
+    test "rejects grpc config on standard service" do
+      project = project_fixture()
+
+      assert {:error, changeset} =
+               Services.create_service(%{
+                 project_id: project.id,
+                 name: "Standard With gRPC",
+                 route_path: "/api/*",
+                 upstream_url: "http://api:8080",
+                 service_type: "standard",
+                 grpc: %{"reflection" => "true"}
+               })
+
+      assert %{grpc: [msg]} = errors_on(changeset)
+      assert msg =~ "must be empty"
+    end
+  end
+
+  describe "websocket service" do
+    test "creates websocket service with valid config" do
+      project = project_fixture()
+
+      websocket = %{
+        "ping_interval" => 30,
+        "max_message_size" => 65_536,
+        "max_connections" => 10_000
+      }
+
+      assert {:ok, %Service{} = service} =
+               Services.create_service(%{
+                 project_id: project.id,
+                 name: "WS Gateway",
+                 route_path: "/ws/*",
+                 upstream_url: "http://ws:8080",
+                 service_type: "websocket",
+                 websocket: websocket
+               })
+
+      assert service.service_type == "websocket"
+      assert service.websocket == websocket
+    end
+
+    test "rejects websocket service with empty websocket config" do
+      project = project_fixture()
+
+      assert {:error, changeset} =
+               Services.create_service(%{
+                 project_id: project.id,
+                 name: "Bad WS",
+                 route_path: "/ws/*",
+                 upstream_url: "http://ws:8080",
+                 service_type: "websocket",
+                 websocket: %{}
+               })
+
+      assert %{websocket: [msg]} = errors_on(changeset)
+      assert msg =~ "required when service_type is websocket"
+    end
+
+    test "rejects websocket config on standard service" do
+      project = project_fixture()
+
+      assert {:error, changeset} =
+               Services.create_service(%{
+                 project_id: project.id,
+                 name: "Standard With WS",
+                 route_path: "/api/*",
+                 upstream_url: "http://api:8080",
+                 service_type: "standard",
+                 websocket: %{"ping_interval" => 30}
+               })
+
+      assert %{websocket: [msg]} = errors_on(changeset)
+      assert msg =~ "must be empty"
+    end
+  end
+
+  describe "graphql service" do
+    test "creates graphql service with valid config" do
+      project = project_fixture()
+
+      graphql = %{
+        "max_depth" => 10,
+        "max_complexity" => 1000,
+        "introspection" => "true"
+      }
+
+      assert {:ok, %Service{} = service} =
+               Services.create_service(%{
+                 project_id: project.id,
+                 name: "GraphQL Gateway",
+                 route_path: "/graphql",
+                 upstream_url: "http://graphql:4000",
+                 service_type: "graphql",
+                 graphql: graphql
+               })
+
+      assert service.service_type == "graphql"
+      assert service.graphql == graphql
+    end
+
+    test "rejects graphql service with empty graphql config" do
+      project = project_fixture()
+
+      assert {:error, changeset} =
+               Services.create_service(%{
+                 project_id: project.id,
+                 name: "Bad GraphQL",
+                 route_path: "/graphql",
+                 upstream_url: "http://graphql:4000",
+                 service_type: "graphql",
+                 graphql: %{}
+               })
+
+      assert %{graphql: [msg]} = errors_on(changeset)
+      assert msg =~ "required when service_type is graphql"
+    end
+
+    test "rejects graphql config on standard service" do
+      project = project_fixture()
+
+      assert {:error, changeset} =
+               Services.create_service(%{
+                 project_id: project.id,
+                 name: "Standard With GraphQL",
+                 route_path: "/api/*",
+                 upstream_url: "http://api:8080",
+                 service_type: "standard",
+                 graphql: %{"max_depth" => 10}
+               })
+
+      assert %{graphql: [msg]} = errors_on(changeset)
+      assert msg =~ "must be empty"
+    end
+  end
+
+  describe "streaming service" do
+    test "creates streaming service with valid config" do
+      project = project_fixture()
+
+      streaming = %{
+        "format" => "sse",
+        "keepalive_interval" => 15,
+        "max_connection_duration" => 3600,
+        "buffer_size" => 1024
+      }
+
+      assert {:ok, %Service{} = service} =
+               Services.create_service(%{
+                 project_id: project.id,
+                 name: "SSE Service",
+                 route_path: "/events/*",
+                 upstream_url: "http://streaming:8080",
+                 service_type: "streaming",
+                 streaming: streaming
+               })
+
+      assert service.service_type == "streaming"
+      assert service.streaming == streaming
+    end
+
+    test "rejects streaming service with empty streaming config" do
+      project = project_fixture()
+
+      assert {:error, changeset} =
+               Services.create_service(%{
+                 project_id: project.id,
+                 name: "Bad Streaming",
+                 route_path: "/events/*",
+                 upstream_url: "http://streaming:8080",
+                 service_type: "streaming",
+                 streaming: %{}
+               })
+
+      assert %{streaming: [msg]} = errors_on(changeset)
+      assert msg =~ "required when service_type is streaming"
+    end
+
+    test "rejects streaming config on standard service" do
+      project = project_fixture()
+
+      assert {:error, changeset} =
+               Services.create_service(%{
+                 project_id: project.id,
+                 name: "Standard With Streaming",
+                 route_path: "/api/*",
+                 upstream_url: "http://api:8080",
+                 service_type: "standard",
+                 streaming: %{"format" => "sse"}
+               })
+
+      assert %{streaming: [msg]} = errors_on(changeset)
+      assert msg =~ "must be empty"
     end
   end
 

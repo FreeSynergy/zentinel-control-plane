@@ -36,6 +36,10 @@ defmodule SentinelCp.Services.Service do
     field :traffic_split, :map, default: %{}
     field :service_type, :string, default: "standard"
     field :inference, :map, default: %{}
+    field :grpc, :map, default: %{}
+    field :websocket, :map, default: %{}
+    field :graphql, :map, default: %{}
+    field :streaming, :map, default: %{}
     field :redirect_url, :string
 
     belongs_to :project, SentinelCp.Projects.Project
@@ -78,6 +82,10 @@ defmodule SentinelCp.Services.Service do
       :traffic_split,
       :service_type,
       :inference,
+      :grpc,
+      :websocket,
+      :graphql,
+      :streaming,
       :redirect_url,
       :upstream_group_id,
       :certificate_id,
@@ -90,8 +98,8 @@ defmodule SentinelCp.Services.Service do
     |> validate_length(:name, min: 1, max: 100)
     |> validate_route_path()
     |> validate_route_type()
-    |> validate_inclusion(:service_type, ~w(standard inference))
-    |> validate_inference_config()
+    |> validate_inclusion(:service_type, ~w(standard inference grpc websocket graphql streaming))
+    |> validate_service_type_config()
     |> generate_slug()
     |> validate_slug()
     |> unique_constraint([:project_id, :slug], error_key: :slug)
@@ -125,6 +133,10 @@ defmodule SentinelCp.Services.Service do
       :traffic_split,
       :service_type,
       :inference,
+      :grpc,
+      :websocket,
+      :graphql,
+      :streaming,
       :redirect_url,
       :upstream_group_id,
       :certificate_id,
@@ -136,35 +148,67 @@ defmodule SentinelCp.Services.Service do
     |> validate_length(:name, min: 1, max: 100)
     |> validate_route_path()
     |> validate_route_type()
-    |> validate_inclusion(:service_type, ~w(standard inference))
-    |> validate_inference_config()
+    |> validate_inclusion(:service_type, ~w(standard inference grpc websocket graphql streaming))
+    |> validate_service_type_config()
   end
 
-  defp validate_inference_config(changeset) do
+  @type_config_fields %{
+    "inference" => :inference,
+    "grpc" => :grpc,
+    "websocket" => :websocket,
+    "graphql" => :graphql,
+    "streaming" => :streaming
+  }
+
+  defp validate_service_type_config(changeset) do
     service_type = get_field(changeset, :service_type)
+
+    # Validate the active type's config is present
+    changeset = validate_active_type_config(changeset, service_type)
+
+    # Validate all inactive type configs are empty
+    Enum.reduce(@type_config_fields, changeset, fn {type, field}, cs ->
+      if type != service_type do
+        value = get_field(cs, field)
+
+        if is_map(value) and value != %{} do
+          add_error(cs, field, "must be empty when service_type is not #{type}")
+        else
+          cs
+        end
+      else
+        cs
+      end
+    end)
+  end
+
+  defp validate_active_type_config(changeset, "inference") do
     inference = get_field(changeset, :inference)
 
-    case service_type do
-      "inference" ->
-        cond do
-          not is_map(inference) or inference == %{} ->
-            add_error(changeset, :inference, "is required when service_type is inference")
+    cond do
+      not is_map(inference) or inference == %{} ->
+        add_error(changeset, :inference, "is required when service_type is inference")
 
-          Map.get(inference, "provider") not in ~w(openai anthropic generic) ->
-            add_error(changeset, :inference, "must include a valid provider (openai, anthropic, generic)")
+      Map.get(inference, "provider") not in ~w(openai anthropic generic) ->
+        add_error(changeset, :inference, "must include a valid provider (openai, anthropic, generic)")
 
-          true ->
-            changeset
-        end
-
-      _ ->
-        if is_map(inference) and inference != %{} do
-          add_error(changeset, :inference, "must be empty for standard services")
-        else
-          changeset
-        end
+      true ->
+        changeset
     end
   end
+
+  defp validate_active_type_config(changeset, type) when type in ~w(grpc websocket graphql streaming) do
+    field = Map.fetch!(@type_config_fields, type)
+    value = get_field(changeset, field)
+
+    if not is_map(value) or value == %{} do
+      add_error(changeset, field, "is required when service_type is #{type}")
+    else
+      changeset
+    end
+  end
+
+  defp validate_active_type_config(changeset, _standard), do: changeset
 
   defp validate_route_path(changeset) do
     validate_format(changeset, :route_path, ~r/^\//, message: "must start with /")

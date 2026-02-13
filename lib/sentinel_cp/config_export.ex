@@ -214,6 +214,10 @@ defmodule SentinelCp.ConfigExport do
       |> maybe_add("compression", s.compression, %{})
       |> maybe_add("security", s.security, %{})
       |> maybe_add("inference", s.inference, %{})
+      |> maybe_add("grpc", s.grpc, %{})
+      |> maybe_add("websocket", s.websocket, %{})
+      |> maybe_add("graphql", s.graphql, %{})
+      |> maybe_add("streaming", s.streaming, %{})
     end)
   end
 
@@ -295,7 +299,11 @@ defmodule SentinelCp.ConfigExport do
           enabled: Map.get(svc_data, "enabled", true),
           position: Map.get(svc_data, "position", 0),
           service_type: Map.get(svc_data, "service_type", "standard"),
-          inference: Map.get(svc_data, "inference", %{})
+          inference: Map.get(svc_data, "inference", %{}),
+          grpc: Map.get(svc_data, "grpc", %{}),
+          websocket: Map.get(svc_data, "websocket", %{}),
+          graphql: Map.get(svc_data, "graphql", %{}),
+          streaming: Map.get(svc_data, "streaming", %{})
         }
 
         case SentinelCp.Services.create_service(attrs) do

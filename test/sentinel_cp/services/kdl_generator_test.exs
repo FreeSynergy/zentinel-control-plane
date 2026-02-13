@@ -1180,6 +1180,278 @@ defmodule SentinelCp.Services.KdlGeneratorTest do
     end
   end
 
+  describe "grpc KDL" do
+    test "generates service-type and grpc block" do
+      services = [
+        %Service{
+          name: "gRPC Gateway",
+          slug: "grpc-gateway",
+          route_path: "/grpc/*",
+          upstream_url: "http://grpc:9090",
+          service_type: "grpc",
+          grpc: %{
+            "max_message_size" => 4_194_304,
+            "reflection" => "true",
+            "health_check_service" => "grpc.health.v1.Health"
+          },
+          inference: %{},
+          websocket: %{},
+          graphql: %{},
+          streaming: %{},
+          retry: %{},
+          cache: %{},
+          rate_limit: %{},
+          health_check: %{},
+          headers: %{},
+          cors: %{},
+          access_control: %{},
+          compression: %{},
+          path_rewrite: %{},
+          security: %{},
+          request_transform: %{},
+          response_transform: %{},
+          traffic_split: %{}
+        }
+      ]
+
+      kdl = KdlGenerator.build_kdl(services, default_config())
+      assert kdl =~ ~s(service-type "grpc")
+      assert kdl =~ "grpc {"
+      assert kdl =~ "max_message_size 4194304"
+      assert kdl =~ ~s(reflection "true")
+      assert kdl =~ ~s(health_check_service "grpc.health.v1.Health")
+    end
+
+    test "does not generate grpc block when empty" do
+      services = [
+        %Service{
+          name: "API",
+          slug: "api",
+          route_path: "/api/*",
+          upstream_url: "http://api:8080",
+          service_type: "standard",
+          grpc: %{},
+          inference: %{},
+          websocket: %{},
+          graphql: %{},
+          streaming: %{},
+          retry: %{},
+          cache: %{},
+          rate_limit: %{},
+          health_check: %{},
+          headers: %{}
+        }
+      ]
+
+      kdl = KdlGenerator.build_kdl(services, default_config())
+      refute kdl =~ "grpc {"
+    end
+  end
+
+  describe "websocket KDL" do
+    test "generates service-type and websocket block" do
+      services = [
+        %Service{
+          name: "WS Gateway",
+          slug: "ws-gateway",
+          route_path: "/ws/*",
+          upstream_url: "http://ws:8080",
+          service_type: "websocket",
+          websocket: %{
+            "ping_interval" => 30,
+            "max_message_size" => 65_536,
+            "max_connections" => 10_000
+          },
+          inference: %{},
+          grpc: %{},
+          graphql: %{},
+          streaming: %{},
+          retry: %{},
+          cache: %{},
+          rate_limit: %{},
+          health_check: %{},
+          headers: %{},
+          cors: %{},
+          access_control: %{},
+          compression: %{},
+          path_rewrite: %{},
+          security: %{},
+          request_transform: %{},
+          response_transform: %{},
+          traffic_split: %{}
+        }
+      ]
+
+      kdl = KdlGenerator.build_kdl(services, default_config())
+      assert kdl =~ ~s(service-type "websocket")
+      assert kdl =~ "websocket {"
+      assert kdl =~ "max_connections 10000"
+      assert kdl =~ "ping_interval 30"
+    end
+
+    test "does not generate websocket block when empty" do
+      services = [
+        %Service{
+          name: "API",
+          slug: "api",
+          route_path: "/api/*",
+          upstream_url: "http://api:8080",
+          service_type: "standard",
+          websocket: %{},
+          inference: %{},
+          grpc: %{},
+          graphql: %{},
+          streaming: %{},
+          retry: %{},
+          cache: %{},
+          rate_limit: %{},
+          health_check: %{},
+          headers: %{}
+        }
+      ]
+
+      kdl = KdlGenerator.build_kdl(services, default_config())
+      refute kdl =~ "websocket {"
+    end
+  end
+
+  describe "graphql KDL" do
+    test "generates service-type and graphql block" do
+      services = [
+        %Service{
+          name: "GraphQL Gateway",
+          slug: "graphql-gateway",
+          route_path: "/graphql",
+          upstream_url: "http://graphql:4000",
+          service_type: "graphql",
+          graphql: %{
+            "max_depth" => 10,
+            "max_complexity" => 1000,
+            "introspection" => "true"
+          },
+          inference: %{},
+          grpc: %{},
+          websocket: %{},
+          streaming: %{},
+          retry: %{},
+          cache: %{},
+          rate_limit: %{},
+          health_check: %{},
+          headers: %{},
+          cors: %{},
+          access_control: %{},
+          compression: %{},
+          path_rewrite: %{},
+          security: %{},
+          request_transform: %{},
+          response_transform: %{},
+          traffic_split: %{}
+        }
+      ]
+
+      kdl = KdlGenerator.build_kdl(services, default_config())
+      assert kdl =~ ~s(service-type "graphql")
+      assert kdl =~ "graphql {"
+      assert kdl =~ "max_depth 10"
+      assert kdl =~ "max_complexity 1000"
+      assert kdl =~ ~s(introspection "true")
+    end
+
+    test "does not generate graphql block when empty" do
+      services = [
+        %Service{
+          name: "API",
+          slug: "api",
+          route_path: "/api/*",
+          upstream_url: "http://api:8080",
+          service_type: "standard",
+          graphql: %{},
+          inference: %{},
+          grpc: %{},
+          websocket: %{},
+          streaming: %{},
+          retry: %{},
+          cache: %{},
+          rate_limit: %{},
+          health_check: %{},
+          headers: %{}
+        }
+      ]
+
+      kdl = KdlGenerator.build_kdl(services, default_config())
+      refute kdl =~ "graphql {"
+    end
+  end
+
+  describe "streaming KDL" do
+    test "generates service-type and streaming block" do
+      services = [
+        %Service{
+          name: "SSE Service",
+          slug: "sse-service",
+          route_path: "/events/*",
+          upstream_url: "http://streaming:8080",
+          service_type: "streaming",
+          streaming: %{
+            "format" => "sse",
+            "keepalive_interval" => 15,
+            "max_connection_duration" => 3600,
+            "buffer_size" => 1024
+          },
+          inference: %{},
+          grpc: %{},
+          websocket: %{},
+          graphql: %{},
+          retry: %{},
+          cache: %{},
+          rate_limit: %{},
+          health_check: %{},
+          headers: %{},
+          cors: %{},
+          access_control: %{},
+          compression: %{},
+          path_rewrite: %{},
+          security: %{},
+          request_transform: %{},
+          response_transform: %{},
+          traffic_split: %{}
+        }
+      ]
+
+      kdl = KdlGenerator.build_kdl(services, default_config())
+      assert kdl =~ ~s(service-type "streaming")
+      assert kdl =~ "streaming {"
+      assert kdl =~ ~s(format "sse")
+      assert kdl =~ "keepalive_interval 15"
+      assert kdl =~ "buffer_size 1024"
+    end
+
+    test "does not generate streaming block when empty" do
+      services = [
+        %Service{
+          name: "API",
+          slug: "api",
+          route_path: "/api/*",
+          upstream_url: "http://api:8080",
+          service_type: "standard",
+          streaming: %{},
+          inference: %{},
+          grpc: %{},
+          websocket: %{},
+          graphql: %{},
+          retry: %{},
+          cache: %{},
+          rate_limit: %{},
+          health_check: %{},
+          headers: %{}
+        }
+      ]
+
+      kdl = KdlGenerator.build_kdl(services, default_config())
+      refute kdl =~ "streaming {"
+    end
+  end
+
   describe "generate/1" do
     test "returns error when no services exist" do
       project = project_fixture()

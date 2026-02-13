@@ -89,7 +89,7 @@ defmodule SentinelCp.Services.ServiceTemplateTest do
       builtin_count = Enum.count(templates, fn t -> t.is_builtin end)
 
       assert custom_count >= 1
-      assert builtin_count >= 7
+      assert builtin_count >= 11
     end
 
     test "does not return templates from other projects" do
@@ -150,14 +150,14 @@ defmodule SentinelCp.Services.ServiceTemplateTest do
   end
 
   describe "built-in templates" do
-    test "ensure_built_ins! creates 7 built-in templates" do
+    test "ensure_built_ins! creates 11 built-in templates" do
       SentinelCp.Services.BuiltInTemplates.ensure_built_ins!()
 
       project = project_fixture()
       templates = Services.list_templates(project.id)
       builtins = Enum.filter(templates, fn t -> t.is_builtin end)
 
-      assert length(builtins) == 7
+      assert length(builtins) == 11
 
       categories = Enum.map(builtins, & &1.category) |> Enum.sort()
       assert "api" in categories
@@ -167,6 +167,9 @@ defmodule SentinelCp.Services.ServiceTemplateTest do
       assert "auth" in categories
       assert "utility" in categories
       assert "inference" in categories
+      assert "grpc" in categories
+      assert "graphql" in categories
+      assert "streaming" in categories
     end
 
     test "ensure_built_ins! is idempotent" do
@@ -177,7 +180,7 @@ defmodule SentinelCp.Services.ServiceTemplateTest do
       templates = Services.list_templates(project.id)
       builtins = Enum.filter(templates, fn t -> t.is_builtin end)
 
-      assert length(builtins) == 7
+      assert length(builtins) == 11
     end
   end
 end

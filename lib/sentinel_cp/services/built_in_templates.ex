@@ -123,6 +123,78 @@ defmodule SentinelCp.Services.BuiltInTemplates do
       },
       is_builtin: true,
       version: 1
+    },
+    %{
+      name: "gRPC Gateway",
+      category: "grpc",
+      description: "gRPC gateway with reflection and health checking.",
+      template_data: %{
+        "upstream_url" => "http://grpc-backend:9090",
+        "route_path" => "/grpc/*",
+        "service_type" => "grpc",
+        "grpc" => %{
+          "max_message_size" => 4_194_304,
+          "reflection" => "true",
+          "health_check_service" => "grpc.health.v1.Health"
+        }
+      },
+      is_builtin: true,
+      version: 1
+    },
+    %{
+      name: "WebSocket Gateway",
+      category: "websocket",
+      description: "WebSocket gateway with connection management and ping/pong.",
+      template_data: %{
+        "upstream_url" => "http://ws-backend:8080",
+        "route_path" => "/ws/*",
+        "service_type" => "websocket",
+        "timeout_seconds" => 300,
+        "websocket" => %{
+          "ping_interval" => 30,
+          "max_message_size" => 65_536,
+          "max_connections" => 10_000
+        }
+      },
+      is_builtin: true,
+      version: 1
+    },
+    %{
+      name: "GraphQL Gateway",
+      category: "graphql",
+      description: "GraphQL gateway with depth limiting, complexity analysis, and introspection control.",
+      template_data: %{
+        "upstream_url" => "http://graphql-backend:4000",
+        "route_path" => "/graphql",
+        "service_type" => "graphql",
+        "graphql" => %{
+          "max_depth" => 10,
+          "max_complexity" => 1000,
+          "introspection" => "true",
+          "persisted_queries" => "false"
+        }
+      },
+      is_builtin: true,
+      version: 1
+    },
+    %{
+      name: "SSE Streaming Service",
+      category: "streaming",
+      description: "Server-Sent Events streaming service with keepalive and buffering.",
+      template_data: %{
+        "upstream_url" => "http://streaming-backend:8080",
+        "route_path" => "/events/*",
+        "service_type" => "streaming",
+        "timeout_seconds" => 600,
+        "streaming" => %{
+          "format" => "sse",
+          "keepalive_interval" => 15,
+          "max_connection_duration" => 3600,
+          "buffer_size" => 1024
+        }
+      },
+      is_builtin: true,
+      version: 1
     }
   ]
 

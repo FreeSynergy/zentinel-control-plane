@@ -62,7 +62,8 @@ defmodule SentinelCp.Services.KdlGenerator do
   defp resolve_service_configs(services, project_id, environment) do
     config_fields = [:headers, :cors, :cache, :retry, :rate_limit, :health_check,
                      :access_control, :compression, :security, :request_transform,
-                     :response_transform, :path_rewrite, :inference]
+                     :response_transform, :path_rewrite, :inference,
+                     :grpc, :websocket, :graphql, :streaming]
 
     Enum.reduce_while(services, {:ok, []}, fn service, {:ok, acc} ->
       case resolve_service_config_maps(service, config_fields, project_id, environment) do
@@ -267,6 +268,10 @@ defmodule SentinelCp.Services.KdlGenerator do
     lines = lines ++ build_response_transform_block(service.response_transform)
     lines = lines ++ build_traffic_split_block(service.traffic_split, group_map)
     lines = lines ++ build_inference_block(service.inference)
+    lines = lines ++ build_grpc_block(service.grpc)
+    lines = lines ++ build_websocket_block(service.websocket)
+    lines = lines ++ build_graphql_block(service.graphql)
+    lines = lines ++ build_streaming_block(service.streaming)
 
     # Append middleware chain blocks (after inline fields)
     lines = lines ++ build_middleware_chain(middleware_chain)
@@ -509,6 +514,18 @@ defmodule SentinelCp.Services.KdlGenerator do
 
     lines ++ ["        }"]
   end
+
+  defp build_grpc_block(g) when g == %{} or g == nil, do: []
+  defp build_grpc_block(g), do: build_nested_map_block(g, "grpc", "        ")
+
+  defp build_websocket_block(ws) when ws == %{} or ws == nil, do: []
+  defp build_websocket_block(ws), do: build_nested_map_block(ws, "websocket", "        ")
+
+  defp build_graphql_block(gql) when gql == %{} or gql == nil, do: []
+  defp build_graphql_block(gql), do: build_nested_map_block(gql, "graphql", "        ")
+
+  defp build_streaming_block(s) when s == %{} or s == nil, do: []
+  defp build_streaming_block(s), do: build_nested_map_block(s, "streaming", "        ")
 
   defp build_inference_sub_block(nil, _name), do: []
   defp build_inference_sub_block(map, _name) when map == %{}, do: []

@@ -198,6 +198,36 @@ defmodule SentinelCp.ConfigExportTest do
     end
   end
 
+  describe "typed service export/import" do
+    test "exports and imports grpc service config", %{project: project} do
+      {:ok, _} =
+        SentinelCp.Services.create_service(%{
+          project_id: project.id,
+          name: "grpc-gateway",
+          route_path: "/grpc/*",
+          upstream_url: "http://grpc:9090",
+          service_type: "grpc",
+          grpc: %{"max_message_size" => 4_194_304, "reflection" => "true"}
+        })
+
+      {:ok, config} = ConfigExport.export(project.id)
+
+      svc = Enum.find(config["services"], &(&1["name"] == "grpc-gateway"))
+      assert svc["service_type"] == "grpc"
+      assert svc["grpc"]["max_message_size"] == 4_194_304
+
+      # Import into a new project
+      project2 = project_fixture()
+      {:ok, summary} = ConfigExport.import_config(project2.id, config)
+      assert summary.created >= 1
+
+      services = SentinelCp.Services.list_services(project2.id)
+      imported = Enum.find(services, &(&1.name == "grpc-gateway"))
+      assert imported.service_type == "grpc"
+      assert imported.grpc["max_message_size"] == 4_194_304
+    end
+  end
+
   # ─── 18.4 GraphQL Schema ────────────────────────────────────────
 
   describe "GraphQL schema" do
