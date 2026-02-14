@@ -773,5 +773,12 @@ defmodule SentinelCpWeb.Router do
       live_dashboard "/dashboard", metrics: SentinelCpWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
+
+    scope "/dev" do
+      forward "/graphiql", Absinthe.Plug.GraphiQL,
+        schema: SentinelCpWeb.GraphQL.Schema,
+        socket: SentinelCpWeb.GraphQL.Socket,
+        json_codec: Jason
+    end
   end
 end

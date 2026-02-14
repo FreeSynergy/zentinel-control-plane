@@ -10,6 +10,7 @@ defmodule SentinelCpWeb.GraphQL.Schema do
   import_types(SentinelCpWeb.GraphQL.Types.Rollout)
   import_types(SentinelCpWeb.GraphQL.Types.Observability)
   import_types(SentinelCpWeb.GraphQL.Types.Policy)
+  import_types(SentinelCpWeb.GraphQL.Types.Subscription)
 
   query do
     import_fields(:project_queries)
@@ -24,6 +25,10 @@ defmodule SentinelCpWeb.GraphQL.Schema do
   mutation do
     import_fields(:bundle_mutations)
     import_fields(:rollout_mutations)
+  end
+
+  subscription do
+    import_fields(:subscription_fields)
   end
 
   def middleware(middleware, _field, %Absinthe.Type.Object{identifier: identifier})

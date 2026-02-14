@@ -22,6 +22,15 @@ defmodule SentinelCpWeb.GraphQL.Types.Observability do
     field :error_budget_remaining, :float
   end
 
+  object :alert_state do
+    field :id, non_null(:id)
+    field :state, non_null(:string)
+    field :value, :float
+    field :started_at, :datetime
+    field :firing_at, :datetime
+    field :resolved_at, :datetime
+  end
+
   object :observability_queries do
     field :alert_rules, list_of(:alert_rule) do
       arg(:project_id, non_null(:id))

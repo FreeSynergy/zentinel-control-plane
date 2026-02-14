@@ -191,7 +191,10 @@ defmodule SentinelCp.Observability.AlertEvaluator do
           alert_state
           |> AlertState.changeset(%{state: "firing", firing_at: now, value: value})
           |> Repo.update()
-          |> tap(fn {:ok, _} -> send_alert_notification(rule, value) end)
+          |> tap(fn {:ok, state} ->
+            send_alert_notification(rule, value)
+            publish_alert_state(state, rule)
+          end)
         else
           # Still pending, update value
           alert_state
@@ -216,6 +219,10 @@ defmodule SentinelCp.Observability.AlertEvaluator do
         alert_state
         |> AlertState.changeset(%{state: "resolved", resolved_at: now})
         |> Repo.update()
+        |> tap(fn {:ok, updated} ->
+          rule = Repo.get(AlertRule, updated.alert_rule_id)
+          if rule, do: publish_alert_state(updated, rule)
+        end)
 
       _ ->
         :ok
@@ -236,7 +243,16 @@ defmodule SentinelCp.Observability.AlertEvaluator do
       |> Repo.insert()
 
     send_alert_notification(rule, value)
+    publish_alert_state(state, rule)
     {:ok, state}
+  end
+
+  defp publish_alert_state(alert_state, rule) do
+    Absinthe.Subscription.publish(
+      SentinelCpWeb.Endpoint,
+      alert_state,
+      alert_state: rule.project_id
+    )
   end
 
   defp send_alert_notification(rule, value) do

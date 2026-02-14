@@ -21,7 +21,9 @@ defmodule SentinelCp.Application do
       # Background job processing
       {Oban, Application.fetch_env!(:sentinel_cp, Oban)},
       # Start to serve requests, typically the last entry
-      SentinelCpWeb.Endpoint
+      SentinelCpWeb.Endpoint,
+      # GraphQL subscriptions (must start after Endpoint)
+      {Absinthe.Subscription, SentinelCpWeb.Endpoint}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

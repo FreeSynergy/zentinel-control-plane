@@ -1427,6 +1427,8 @@ defmodule SentinelCp.Rollouts do
       "rollouts:#{rollout.project_id}",
       {:rollout_updated, rollout.id}
     )
+
+    Absinthe.Subscription.publish(SentinelCpWeb.Endpoint, rollout, rollout_progress: rollout.id)
   end
 
   defp broadcast_and_notify(rollout, old_state, new_state) do

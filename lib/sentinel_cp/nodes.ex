@@ -126,6 +126,12 @@ defmodule SentinelCp.Nodes do
         end
       end
 
+      Absinthe.Subscription.publish(
+        SentinelCpWeb.Endpoint,
+        updated_node,
+        node_status: updated_node.project_id
+      )
+
       updated_node
     end)
   end
