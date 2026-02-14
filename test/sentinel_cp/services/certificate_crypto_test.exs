@@ -31,10 +31,13 @@ defmodule SentinelCp.Services.CertificateCryptoTest do
 
       # Flip a byte in the ciphertext portion (after IV + tag)
       <<iv::binary-12, tag::binary-16, ciphertext::binary>> = encrypted
-      tampered_ciphertext = :binary.copy(ciphertext) |> then(fn c ->
-        <<first, rest::binary>> = c
-        <<Bitwise.bxor(first, 0xFF), rest::binary>>
-      end)
+
+      tampered_ciphertext =
+        :binary.copy(ciphertext)
+        |> then(fn c ->
+          <<first, rest::binary>> = c
+          <<Bitwise.bxor(first, 0xFF), rest::binary>>
+        end)
 
       tampered = iv <> tag <> tampered_ciphertext
       assert {:error, :decryption_failed} = CertificateCrypto.decrypt(tampered)

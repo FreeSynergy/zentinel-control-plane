@@ -100,16 +100,21 @@ defmodule SentinelCpWeb.Integration.Api.UpstreamGroupWorkflowTest do
       # Update target
       update_resp =
         api_conn
-        |> put("/api/v1/projects/#{project_slug}/upstream-groups/#{group_id}/targets/#{target_id}", %{
-          weight: 200
-        })
+        |> put(
+          "/api/v1/projects/#{project_slug}/upstream-groups/#{group_id}/targets/#{target_id}",
+          %{
+            weight: 200
+          }
+        )
         |> json_response!(200)
 
       assert update_resp["target"]["weight"] == 200
 
       # Delete target
       api_conn
-      |> delete("/api/v1/projects/#{project_slug}/upstream-groups/#{group_id}/targets/#{target_id}")
+      |> delete(
+        "/api/v1/projects/#{project_slug}/upstream-groups/#{group_id}/targets/#{target_id}"
+      )
       |> response(204)
     end
   end

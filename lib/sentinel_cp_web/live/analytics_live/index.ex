@@ -84,12 +84,20 @@ defmodule SentinelCpWeb.AnalyticsLive.Index do
 
       <.stat_strip>
         <:stat label="Total Requests" value={format_number(@overview[:total_requests] || 0)} />
-        <:stat label="Error Rate" value={format_error_rate(@overview)} color={error_rate_color(@overview)} />
+        <:stat
+          label="Error Rate"
+          value={format_error_rate(@overview)}
+          color={error_rate_color(@overview)}
+        />
         <:stat label="Avg p50" value={format_latency(@overview[:avg_latency_p50])} />
         <:stat label="Avg p95" value={format_latency(@overview[:avg_latency_p95])} />
         <:stat
           label="Bandwidth"
-          value={format_bytes((@overview[:total_bandwidth_in] || 0) + (@overview[:total_bandwidth_out] || 0))}
+          value={
+            format_bytes(
+              (@overview[:total_bandwidth_in] || 0) + (@overview[:total_bandwidth_out] || 0)
+            )
+          }
         />
       </.stat_strip>
 
@@ -158,7 +166,10 @@ defmodule SentinelCpWeb.AnalyticsLive.Index do
   end
 
   defp format_number(n) when is_nil(n), do: "0"
-  defp format_number(n) when is_integer(n) and n >= 1_000_000, do: "#{Float.round(n / 1_000_000, 1)}M"
+
+  defp format_number(n) when is_integer(n) and n >= 1_000_000,
+    do: "#{Float.round(n / 1_000_000, 1)}M"
+
   defp format_number(n) when is_integer(n) and n >= 1_000, do: "#{Float.round(n / 1_000, 1)}K"
   defp format_number(n) when is_integer(n), do: to_string(n)
   defp format_number(n), do: to_string(n)
@@ -169,7 +180,10 @@ defmodule SentinelCpWeb.AnalyticsLive.Index do
 
   defp format_bytes(nil), do: "0 B"
   defp format_bytes(0), do: "0 B"
-  defp format_bytes(bytes) when bytes >= 1_073_741_824, do: "#{Float.round(bytes / 1_073_741_824, 1)} GB"
+
+  defp format_bytes(bytes) when bytes >= 1_073_741_824,
+    do: "#{Float.round(bytes / 1_073_741_824, 1)} GB"
+
   defp format_bytes(bytes) when bytes >= 1_048_576, do: "#{Float.round(bytes / 1_048_576, 1)} MB"
   defp format_bytes(bytes) when bytes >= 1024, do: "#{Float.round(bytes / 1024, 1)} KB"
   defp format_bytes(bytes), do: "#{bytes} B"
@@ -184,6 +198,7 @@ defmodule SentinelCpWeb.AnalyticsLive.Index do
   defp error_rate_color(%{total_requests: reqs, total_errors: errs})
        when is_integer(reqs) and reqs > 0 and is_integer(errs) do
     rate = errs / reqs * 100
+
     cond do
       rate > 5 -> "error"
       rate > 1 -> "warning"

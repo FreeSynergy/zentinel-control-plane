@@ -142,7 +142,8 @@ defmodule SentinelCp.Observability.SliComputer do
     end
   end
 
-  defp compute_error_budget(sli_type, target, sli_value) when sli_type in ["latency_p99", "latency_p95"] do
+  defp compute_error_budget(sli_type, target, sli_value)
+       when sli_type in ["latency_p99", "latency_p95"] do
     # For latency: budget = 1 - (actual / target)
     if target > 0 do
       remaining = 1.0 - sli_value / target
@@ -154,7 +155,8 @@ defmodule SentinelCp.Observability.SliComputer do
 
   defp compute_error_budget(_, _, _), do: 0.0
 
-  defp compute_burn_rate(sli_type, target, sli_value, window_days) when sli_type in ["availability"] do
+  defp compute_burn_rate(sli_type, target, sli_value, window_days)
+       when sli_type in ["availability"] do
     # Burn rate = rate at which error budget is being consumed
     # burn_rate = (error_rate_observed) / (error_rate_allowed)
     allowed = 100.0 - target

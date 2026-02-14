@@ -83,9 +83,13 @@ defmodule SentinelCpWeb.MiddlewaresLive.Show do
             <:item label="Name">{@middleware.name}</:item>
             <:item label="Slug"><span class="font-mono">{@middleware.slug}</span></:item>
             <:item label="Description">{@middleware.description || "—"}</:item>
-            <:item label="Type"><span class="badge badge-sm badge-outline">{@middleware.middleware_type}</span></:item>
+            <:item label="Type">
+              <span class="badge badge-sm badge-outline">{@middleware.middleware_type}</span>
+            </:item>
             <:item label="Enabled">{if @middleware.enabled, do: "Yes", else: "No"}</:item>
-            <:item label="Created">{Calendar.strftime(@middleware.inserted_at, "%Y-%m-%d %H:%M:%S UTC")}</:item>
+            <:item label="Created">
+              {Calendar.strftime(@middleware.inserted_at, "%Y-%m-%d %H:%M:%S UTC")}
+            </:item>
           </.definition_list>
         </.k8s_section>
 
@@ -95,7 +99,10 @@ defmodule SentinelCpWeb.MiddlewaresLive.Show do
               <span class="font-mono text-sm">{format_config_value(value)}</span>
             </:item>
           </.definition_list>
-          <div :if={@middleware.config == nil || @middleware.config == %{}} class="text-center py-4 text-base-content/50 text-sm">
+          <div
+            :if={@middleware.config == nil || @middleware.config == %{}}
+            class="text-center py-4 text-base-content/50 text-sm"
+          >
             No configuration set.
           </div>
         </.k8s_section>

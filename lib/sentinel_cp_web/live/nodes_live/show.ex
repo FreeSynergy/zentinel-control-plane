@@ -124,7 +124,9 @@ defmodule SentinelCpWeb.NodesLive.Show do
           socket.assigns.current_user,
           "delete",
           "node",
-          socket.assigns.node.id, project_id: socket.assigns.project.id)
+          socket.assigns.node.id,
+          project_id: socket.assigns.project.id
+        )
 
         {:noreply,
          socket

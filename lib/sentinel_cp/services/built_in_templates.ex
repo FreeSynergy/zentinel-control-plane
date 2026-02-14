@@ -116,8 +116,18 @@ defmodule SentinelCp.Services.BuiltInTemplates do
         "inference" => %{
           "provider" => "openai",
           "token_rate_limit" => %{"tokens_per_minute" => 100_000, "burst_allowance" => 1.5},
-          "token_budget" => %{"period" => "monthly", "limit" => 10_000_000, "alert_threshold" => 0.8, "enforcement" => "block"},
-          "cost_attribution" => %{"currency" => "USD", "models" => [%{"pattern" => "*", "input_cost_per_1k" => 0.01, "output_cost_per_1k" => 0.03}]},
+          "token_budget" => %{
+            "period" => "monthly",
+            "limit" => 10_000_000,
+            "alert_threshold" => 0.8,
+            "enforcement" => "block"
+          },
+          "cost_attribution" => %{
+            "currency" => "USD",
+            "models" => [
+              %{"pattern" => "*", "input_cost_per_1k" => 0.01, "output_cost_per_1k" => 0.03}
+            ]
+          },
           "streaming" => %{"enabled" => true, "format" => "sse"}
         }
       },
@@ -162,7 +172,8 @@ defmodule SentinelCp.Services.BuiltInTemplates do
     %{
       name: "GraphQL Gateway",
       category: "graphql",
-      description: "GraphQL gateway with depth limiting, complexity analysis, and introspection control.",
+      description:
+        "GraphQL gateway with depth limiting, complexity analysis, and introspection control.",
       template_data: %{
         "upstream_url" => "http://graphql-backend:4000",
         "route_path" => "/graphql",

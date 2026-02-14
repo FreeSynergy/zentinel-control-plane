@@ -91,7 +91,9 @@ defmodule SentinelCpWeb.CertificatesLive.Edit do
               class="input input-bordered input-sm w-full input-disabled"
             />
             <label class="label">
-              <span class="label-text-alt text-base-content/50">Domain cannot be changed. Upload a new certificate instead.</span>
+              <span class="label-text-alt text-base-content/50">
+                Domain cannot be changed. Upload a new certificate instead.
+              </span>
             </label>
           </div>
 
@@ -99,7 +101,9 @@ defmodule SentinelCpWeb.CertificatesLive.Edit do
             <label class="label"><span class="label-text font-medium">Status</span></label>
             <select name="status" class="select select-bordered select-sm w-48">
               <option value="active" selected={@certificate.status == "active"}>Active</option>
-              <option value="expiring_soon" selected={@certificate.status == "expiring_soon"}>Expiring Soon</option>
+              <option value="expiring_soon" selected={@certificate.status == "expiring_soon"}>
+                Expiring Soon
+              </option>
               <option value="expired" selected={@certificate.status == "expired"}>Expired</option>
               <option value="revoked" selected={@certificate.status == "revoked"}>Revoked</option>
             </select>
@@ -130,7 +134,9 @@ defmodule SentinelCpWeb.CertificatesLive.Edit do
               placeholder="admin@example.com"
             />
             <label class="label">
-              <span class="label-text-alt text-base-content/50">Contact email for Let's Encrypt notifications</span>
+              <span class="label-text-alt text-base-content/50">
+                Contact email for Let's Encrypt notifications
+              </span>
             </label>
           </div>
 
@@ -139,13 +145,19 @@ defmodule SentinelCpWeb.CertificatesLive.Edit do
             <select name="acme_directory_url" class="select select-bordered select-sm w-full">
               <option
                 value="https://acme-v02.api.letsencrypt.org/directory"
-                selected={(@certificate.acme_config || %{})["directory_url"] == "https://acme-v02.api.letsencrypt.org/directory"}
+                selected={
+                  (@certificate.acme_config || %{})["directory_url"] ==
+                    "https://acme-v02.api.letsencrypt.org/directory"
+                }
               >
                 Let's Encrypt Production
               </option>
               <option
                 value="https://acme-staging-v02.api.letsencrypt.org/directory"
-                selected={(@certificate.acme_config || %{})["directory_url"] == "https://acme-staging-v02.api.letsencrypt.org/directory"}
+                selected={
+                  (@certificate.acme_config || %{})["directory_url"] ==
+                    "https://acme-staging-v02.api.letsencrypt.org/directory"
+                }
               >
                 Let's Encrypt Staging
               </option>
@@ -153,7 +165,9 @@ defmodule SentinelCpWeb.CertificatesLive.Edit do
           </div>
 
           <div class="form-control">
-            <label class="label"><span class="label-text font-medium">Renewal Threshold (days)</span></label>
+            <label class="label">
+              <span class="label-text font-medium">Renewal Threshold (days)</span>
+            </label>
             <input
               type="number"
               name="acme_renewal_days"
@@ -163,13 +177,18 @@ defmodule SentinelCpWeb.CertificatesLive.Edit do
               class="input input-bordered input-sm w-32"
             />
             <label class="label">
-              <span class="label-text-alt text-base-content/50">Renew when certificate expires within this many days</span>
+              <span class="label-text-alt text-base-content/50">
+                Renew when certificate expires within this many days
+              </span>
             </label>
           </div>
 
           <div class="flex gap-2 pt-4">
             <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
-            <.link navigate={cert_show_path(@org, @project, @certificate)} class="btn btn-ghost btn-sm">
+            <.link
+              navigate={cert_show_path(@org, @project, @certificate)}
+              class="btn btn-ghost btn-sm"
+            >
               Cancel
             </.link>
           </div>

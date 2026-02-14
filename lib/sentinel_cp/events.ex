@@ -283,53 +283,77 @@ defmodule SentinelCp.Events do
         _ -> "rollout.state_changed"
       end
 
-    emit(event_type, %{
-      rollout_id: rollout.id,
-      bundle_id: rollout.bundle_id,
-      strategy: rollout.strategy,
-      old_state: old_state,
-      new_state: new_state
-    }, project_id: rollout.project_id)
+    emit(
+      event_type,
+      %{
+        rollout_id: rollout.id,
+        bundle_id: rollout.bundle_id,
+        strategy: rollout.strategy,
+        old_state: old_state,
+        new_state: new_state
+      },
+      project_id: rollout.project_id
+    )
   end
 
   def notify_rollout_approved(rollout, approver) do
-    emit("rollout.approved", %{
-      rollout_id: rollout.id,
-      approver_id: approver.id,
-      approver_email: approver.email
-    }, project_id: rollout.project_id)
+    emit(
+      "rollout.approved",
+      %{
+        rollout_id: rollout.id,
+        approver_id: approver.id,
+        approver_email: approver.email
+      },
+      project_id: rollout.project_id
+    )
   end
 
   def notify_rollout_rejected(rollout, rejecter, comment) do
-    emit("rollout.rejected", %{
-      rollout_id: rollout.id,
-      rejected_by_id: rejecter.id,
-      rejected_by_email: rejecter.email,
-      comment: comment
-    }, project_id: rollout.project_id)
+    emit(
+      "rollout.rejected",
+      %{
+        rollout_id: rollout.id,
+        rejected_by_id: rejecter.id,
+        rejected_by_email: rejecter.email,
+        comment: comment
+      },
+      project_id: rollout.project_id
+    )
   end
 
   def notify_drift_detected(node, event, project) do
-    emit("drift.detected", %{
-      node_id: node.id,
-      node_name: node.name,
-      expected_bundle_id: event.expected_bundle_id,
-      actual_bundle_id: event.actual_bundle_id
-    }, project_id: project.id)
+    emit(
+      "drift.detected",
+      %{
+        node_id: node.id,
+        node_name: node.name,
+        expected_bundle_id: event.expected_bundle_id,
+        actual_bundle_id: event.actual_bundle_id
+      },
+      project_id: project.id
+    )
   end
 
   def notify_drift_resolved(node, event, project) do
-    emit("drift.resolved", %{
-      node_id: node.id,
-      node_name: node.name,
-      resolution: event.resolution
-    }, project_id: project.id)
+    emit(
+      "drift.resolved",
+      %{
+        node_id: node.id,
+        node_name: node.name,
+        resolution: event.resolution
+      },
+      project_id: project.id
+    )
   end
 
   def notify_drift_threshold_exceeded(project, drift_stats) do
-    emit("drift.threshold_exceeded", %{
-      total_managed: drift_stats.total_managed,
-      drifted: drift_stats.drifted
-    }, project_id: project.id)
+    emit(
+      "drift.threshold_exceeded",
+      %{
+        total_managed: drift_stats.total_managed,
+        drifted: drift_stats.drifted
+      },
+      project_id: project.id
+    )
   end
 end

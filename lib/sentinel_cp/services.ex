@@ -8,7 +8,28 @@ defmodule SentinelCp.Services do
 
   import Ecto.Query, warn: false
   alias SentinelCp.Repo
-  alias SentinelCp.Services.{Service, ServiceTemplate, ProjectConfig, UpstreamGroup, UpstreamTarget, Certificate, TrustStore, AuthPolicy, OpenApiSpec, DiscoverySource, DiscoverySync, Middleware, ServiceMiddleware, InternalCa, IssuedCertificate, CACrypto, CertificateCrypto, CircuitBreakerStatus}
+
+  alias SentinelCp.Services.{
+    Service,
+    ServiceTemplate,
+    ProjectConfig,
+    UpstreamGroup,
+    UpstreamTarget,
+    Certificate,
+    TrustStore,
+    AuthPolicy,
+    OpenApiSpec,
+    DiscoverySource,
+    DiscoverySync,
+    Middleware,
+    ServiceMiddleware,
+    InternalCa,
+    IssuedCertificate,
+    CACrypto,
+    CertificateCrypto,
+    CircuitBreakerStatus
+  }
+
   alias SentinelCp.Secrets
 
   ## Services
@@ -866,7 +887,8 @@ defmodule SentinelCp.Services do
           {:discovery_synced, source.id}
         )
 
-        {:ok, %{added: length(result.add), removed: length(result.remove), kept: length(result.keep)}}
+        {:ok,
+         %{added: length(result.add), removed: length(result.remove), kept: length(result.keep)}}
 
       {:error, reason} ->
         error_msg = if is_binary(reason), do: reason, else: inspect(reason)
@@ -1027,7 +1049,18 @@ defmodule SentinelCp.Services do
     %CircuitBreakerStatus{}
     |> CircuitBreakerStatus.changeset(attrs)
     |> Repo.insert(
-      on_conflict: {:replace, [:state, :failure_count, :success_count, :last_failure_at, :last_success_at, :last_trip_at, :metadata, :updated_at]},
+      on_conflict:
+        {:replace,
+         [
+           :state,
+           :failure_count,
+           :success_count,
+           :last_failure_at,
+           :last_success_at,
+           :last_trip_at,
+           :metadata,
+           :updated_at
+         ]},
       conflict_target: [:upstream_group_id, :node_id],
       returning: true
     )
@@ -1112,7 +1145,12 @@ defmodule SentinelCp.Services do
   def get_topology_data(project_id) do
     services =
       list_services(project_id)
-      |> Repo.preload([:upstream_group, :auth_policy, :certificate, service_middlewares: :middleware])
+      |> Repo.preload([
+        :upstream_group,
+        :auth_policy,
+        :certificate,
+        service_middlewares: :middleware
+      ])
 
     upstream_groups = list_upstream_groups(project_id)
     auth_policies = list_auth_policies(project_id)
@@ -1155,9 +1193,10 @@ defmodule SentinelCp.Services do
       metadata: %{
         algorithm: group.algorithm,
         target_count: target_count,
-        targets: Enum.map(group.targets || [], fn t ->
-          %{id: t.id, host: t.host, port: t.port, weight: t.weight}
-        end)
+        targets:
+          Enum.map(group.targets || [], fn t ->
+            %{id: t.id, host: t.host, port: t.port, weight: t.weight}
+          end)
       }
     }
   end
@@ -1202,7 +1241,10 @@ defmodule SentinelCp.Services do
 
         edges =
           if service.upstream_group_id do
-            [%{source: service.id, target: service.upstream_group_id, edge_type: "upstream"} | edges]
+            [
+              %{source: service.id, target: service.upstream_group_id, edge_type: "upstream"}
+              | edges
+            ]
           else
             edges
           end

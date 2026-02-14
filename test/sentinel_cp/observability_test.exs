@@ -152,7 +152,10 @@ defmodule SentinelCp.ObservabilityTest do
       errors = errors_on(changeset)
       # SQLite may report the unique constraint on either field in the composite index
       has_name_error = Map.has_key?(errors, :name) and "has already been taken" in errors.name
-      has_project_error = Map.has_key?(errors, :project_id) and "has already been taken" in errors.project_id
+
+      has_project_error =
+        Map.has_key?(errors, :project_id) and "has already been taken" in errors.project_id
+
       assert has_name_error or has_project_error
     end
 
@@ -616,7 +619,9 @@ defmodule SentinelCp.ObservabilityTest do
 
     test "prune_old_metrics removes expired data", %{project: project} do
       service = service_fixture(project)
-      old_time = DateTime.utc_now() |> DateTime.add(-10 * 86400, :second) |> DateTime.truncate(:second)
+
+      old_time =
+        DateTime.utc_now() |> DateTime.add(-10 * 86400, :second) |> DateTime.truncate(:second)
 
       insert_metric(service.id, project.id, old_time, 50, 2)
 

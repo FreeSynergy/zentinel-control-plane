@@ -18,7 +18,8 @@ defmodule SentinelCp.Cluster.LeaderElection do
   use GenServer
   require Logger
 
-  @lock_id 728_394_561  # Arbitrary unique lock ID
+  # Arbitrary unique lock ID
+  @lock_id 728_394_561
   @check_interval_ms 15_000
 
   def start_link(opts \\ []) do
@@ -30,7 +31,8 @@ defmodule SentinelCp.Cluster.LeaderElection do
     try do
       GenServer.call(__MODULE__, :leader?, 5_000)
     catch
-      :exit, _ -> true  # If GenServer not running, assume leader (single-instance)
+      # If GenServer not running, assume leader (single-instance)
+      :exit, _ -> true
     end
   end
 
@@ -91,6 +93,7 @@ defmodule SentinelCp.Cluster.LeaderElection do
       _ -> false
     end
   rescue
-    _ -> true  # Default to leader on error
+    # Default to leader on error
+    _ -> true
   end
 end

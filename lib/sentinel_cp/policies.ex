@@ -83,16 +83,18 @@ defmodule SentinelCp.Policies do
       end)
       |> Enum.reverse()
 
-    enforced = Enum.filter(violations, fn {policy, _} ->
-      not dry_run and policy.enforcement == "enforce"
-    end)
+    enforced =
+      Enum.filter(violations, fn {policy, _} ->
+        not dry_run and policy.enforcement == "enforce"
+      end)
 
     if enforced == [] do
       {:ok, violations}
     else
-      messages = Enum.map(enforced, fn {policy, _} ->
-        "Policy '#{policy.name}' violated: #{policy.expression}"
-      end)
+      messages =
+        Enum.map(enforced, fn {policy, _} ->
+          "Policy '#{policy.name}' violated: #{policy.expression}"
+        end)
 
       {:error, {:policy_violation, messages}}
     end
@@ -129,7 +131,9 @@ defmodule SentinelCp.Policies do
   ## Private
 
   defp record_violation(policy, context, dry_run) do
-    resource_type = Map.get(context, "resource_type") || Map.get(context, :resource_type, "unknown")
+    resource_type =
+      Map.get(context, "resource_type") || Map.get(context, :resource_type, "unknown")
+
     resource_id = Map.get(context, "resource_id") || Map.get(context, :resource_id)
     action = Map.get(context, "action") || Map.get(context, :action, "unknown")
 

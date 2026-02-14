@@ -25,7 +25,8 @@ defmodule SentinelCp.Analytics.WafAnomalyDetector do
     anomalies =
       Enum.flat_map(observations, fn {metric_type, observed} ->
         case Map.get(baselines, metric_type) do
-          %{mean: mean, stddev: stddev} when is_number(mean) and is_number(stddev) and stddev > 0 ->
+          %{mean: mean, stddev: stddev}
+          when is_number(mean) and is_number(stddev) and stddev > 0 ->
             detect_spike(metric_type, observed, mean, stddev, sigma_threshold)
 
           _ ->
@@ -39,7 +40,13 @@ defmodule SentinelCp.Analytics.WafAnomalyDetector do
   @doc """
   Detects spike anomalies where the observed value exceeds mean + threshold * stddev.
   """
-  def detect_spike(metric_type, observed, mean, stddev, sigma_threshold \\ @default_sigma_threshold) do
+  def detect_spike(
+        metric_type,
+        observed,
+        mean,
+        stddev,
+        sigma_threshold \\ @default_sigma_threshold
+      ) do
     deviation = (observed - mean) / stddev
 
     if deviation > sigma_threshold do
@@ -49,7 +56,8 @@ defmodule SentinelCp.Analytics.WafAnomalyDetector do
         %{
           anomaly_type: "spike",
           severity: severity,
-          description: "#{metric_type} spike: #{Float.round(observed * 1.0, 1)} observed vs #{Float.round(mean, 1)} expected (#{Float.round(deviation, 1)} sigma)",
+          description:
+            "#{metric_type} spike: #{Float.round(observed * 1.0, 1)} observed vs #{Float.round(mean, 1)} expected (#{Float.round(deviation, 1)} sigma)",
           observed_value: observed * 1.0,
           expected_mean: mean,
           expected_stddev: stddev,
@@ -85,7 +93,12 @@ defmodule SentinelCp.Analytics.WafAnomalyDetector do
   @doc """
   Detects IP burst anomalies (unusual number of unique attacking IPs).
   """
-  def detect_ip_burst(unique_ips, baseline_mean, baseline_stddev, sigma_threshold \\ @default_sigma_threshold) do
+  def detect_ip_burst(
+        unique_ips,
+        baseline_mean,
+        baseline_stddev,
+        sigma_threshold \\ @default_sigma_threshold
+      ) do
     if baseline_stddev > 0 do
       detect_spike("unique_ips", unique_ips, baseline_mean, baseline_stddev, sigma_threshold)
       |> Enum.map(&Map.put(&1, :anomaly_type, "ip_burst"))
@@ -97,7 +110,12 @@ defmodule SentinelCp.Analytics.WafAnomalyDetector do
   @doc """
   Detects rate change anomalies (sudden increase in block rate).
   """
-  def detect_rate_change(current_rate, baseline_mean, baseline_stddev, sigma_threshold \\ @default_sigma_threshold) do
+  def detect_rate_change(
+        current_rate,
+        baseline_mean,
+        baseline_stddev,
+        sigma_threshold \\ @default_sigma_threshold
+      ) do
     if baseline_stddev > 0 do
       detect_spike("block_rate", current_rate, baseline_mean, baseline_stddev, sigma_threshold)
       |> Enum.map(&Map.put(&1, :anomaly_type, "rate_change"))

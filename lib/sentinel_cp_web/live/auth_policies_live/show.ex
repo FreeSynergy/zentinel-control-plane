@@ -83,9 +83,13 @@ defmodule SentinelCpWeb.AuthPoliciesLive.Show do
             <:item label="Name">{@policy.name}</:item>
             <:item label="Slug"><span class="font-mono">{@policy.slug}</span></:item>
             <:item label="Description">{@policy.description || "—"}</:item>
-            <:item label="Auth Type"><span class="badge badge-sm badge-outline">{@policy.auth_type}</span></:item>
+            <:item label="Auth Type">
+              <span class="badge badge-sm badge-outline">{@policy.auth_type}</span>
+            </:item>
             <:item label="Enabled">{if @policy.enabled, do: "Yes", else: "No"}</:item>
-            <:item label="Created">{Calendar.strftime(@policy.inserted_at, "%Y-%m-%d %H:%M:%S UTC")}</:item>
+            <:item label="Created">
+              {Calendar.strftime(@policy.inserted_at, "%Y-%m-%d %H:%M:%S UTC")}
+            </:item>
           </.definition_list>
         </.k8s_section>
 
@@ -95,7 +99,10 @@ defmodule SentinelCpWeb.AuthPoliciesLive.Show do
               <span class="font-mono text-sm">{value}</span>
             </:item>
           </.definition_list>
-          <div :if={@policy.config == nil || @policy.config == %{}} class="text-center py-4 text-base-content/50 text-sm">
+          <div
+            :if={@policy.config == nil || @policy.config == %{}}
+            class="text-center py-4 text-base-content/50 text-sm"
+          >
             No configuration set.
           </div>
         </.k8s_section>

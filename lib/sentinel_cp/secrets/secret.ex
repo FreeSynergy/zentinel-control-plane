@@ -33,7 +33,10 @@ defmodule SentinelCp.Secrets.Secret do
     secret
     |> cast(attrs, [:name, :value, :description, :environment, :project_id])
     |> validate_required([:name, :value, :project_id])
-    |> validate_format(:name, @name_format, message: "must start with a letter or underscore and contain only letters, numbers, and underscores")
+    |> validate_format(:name, @name_format,
+      message:
+        "must start with a letter or underscore and contain only letters, numbers, and underscores"
+    )
     |> validate_length(:name, min: 1, max: 100)
     |> generate_slug()
     |> encrypt_value()

@@ -8,7 +8,11 @@ defmodule SentinelCp.Secrets.VaultConfigTest do
     {:ok, org} = SentinelCp.Orgs.create_org(%{name: "Vault Org", slug: "vault-org"})
 
     {:ok, project} =
-      SentinelCp.Projects.create_project(%{name: "Vault Project", slug: "vault-proj", org_id: org.id})
+      SentinelCp.Projects.create_project(%{
+        name: "Vault Project",
+        slug: "vault-proj",
+        org_id: org.id
+      })
 
     %{project: project}
   end

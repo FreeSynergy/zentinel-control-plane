@@ -20,7 +20,13 @@ defmodule SentinelCpWeb.InternalCaLive.Show do
          project: project,
          internal_ca: internal_ca,
          issued_certificates: issued_certs,
-         form: to_form(%{"name" => "", "subject_cn" => "", "key_algorithm" => "EC-P384", "validity_years" => "10"})
+         form:
+           to_form(%{
+             "name" => "",
+             "subject_cn" => "",
+             "key_algorithm" => "EC-P384",
+             "validity_years" => "10"
+           })
        )}
     else
       _ -> {:ok, push_navigate(socket, to: ~p"/orgs")}
@@ -115,7 +121,9 @@ defmodule SentinelCpWeb.InternalCaLive.Show do
             <.definition_list>
               <:item label="Name">{@internal_ca.name}</:item>
               <:item label="Algorithm">{@internal_ca.key_algorithm}</:item>
-              <:item label="Subject CN"><span class="font-mono">{@internal_ca.subject_cn}</span></:item>
+              <:item label="Subject CN">
+                <span class="font-mono">{@internal_ca.subject_cn}</span>
+              </:item>
               <:item label="Fingerprint (SHA-256)">
                 <span class="font-mono text-xs">{@internal_ca.fingerprint_sha256 || "—"}</span>
               </:item>

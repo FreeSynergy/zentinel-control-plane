@@ -94,7 +94,13 @@ defmodule SentinelCp.Services.Certificate do
   """
   def acme_changeset(cert, attrs) do
     cert
-    |> cast(attrs, [:acme_account_key_encrypted, :last_renewal_at, :last_renewal_error, :auto_renew, :acme_config])
+    |> cast(attrs, [
+      :acme_account_key_encrypted,
+      :last_renewal_at,
+      :last_renewal_error,
+      :auto_renew,
+      :acme_config
+    ])
   end
 
   @doc """

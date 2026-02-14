@@ -40,7 +40,8 @@ defmodule SentinelCp.Auth.SsoTest do
         issuer: "https://login.microsoftonline.com/tenant",
         client_id: "azure-client",
         client_secret: "super-secret-value",
-        discovery_url: "https://login.microsoftonline.com/tenant/v2.0/.well-known/openid-configuration"
+        discovery_url:
+          "https://login.microsoftonline.com/tenant/v2.0/.well-known/openid-configuration"
       }
 
       assert {:ok, provider} = Sso.create_oidc_provider(attrs)
@@ -101,7 +102,10 @@ defmodule SentinelCp.Auth.SsoTest do
       }
 
       assert {:ok, _} = Sso.create_oidc_provider(attrs)
-      assert {:error, changeset} = Sso.create_oidc_provider(%{attrs | name: "Okta 2", client_id: "c2"})
+
+      assert {:error, changeset} =
+               Sso.create_oidc_provider(%{attrs | name: "Okta 2", client_id: "c2"})
+
       assert "has already been taken" in errors_on(changeset).org_id
     end
 

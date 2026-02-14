@@ -1026,7 +1026,9 @@ defmodule SentinelCp.Services.KdlGeneratorTest do
             "token_budget" => %{"period" => "monthly", "limit" => 10_000_000},
             "cost_attribution" => %{
               "currency" => "USD",
-              "models" => [%{"pattern" => "*", "input_cost_per_1k" => 0.01, "output_cost_per_1k" => 0.03}]
+              "models" => [
+                %{"pattern" => "*", "input_cost_per_1k" => 0.01, "output_cost_per_1k" => 0.03}
+              ]
             },
             "streaming" => %{"enabled" => true, "format" => "sse"}
           },

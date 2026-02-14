@@ -25,7 +25,11 @@ defmodule SentinelCpWeb.Api.SecretController do
   def show(conn, %{"project_slug" => project_slug, "id" => id}) do
     with {:ok, project} <- get_project(project_slug),
          {:ok, secret} <- get_secret(id, project.id) do
-      Audit.log_api_key_action(conn.assigns.current_api_key, "secret.accessed", "secret", secret.id,
+      Audit.log_api_key_action(
+        conn.assigns.current_api_key,
+        "secret.accessed",
+        "secret",
+        secret.id,
         project_id: project.id
       )
 
@@ -164,7 +168,12 @@ defmodule SentinelCpWeb.Api.SecretController do
   defp build_update_attrs(params) do
     attrs = %{}
     attrs = if params["value"], do: Map.put(attrs, :value, params["value"]), else: attrs
-    attrs = if params["description"], do: Map.put(attrs, :description, params["description"]), else: attrs
+
+    attrs =
+      if params["description"],
+        do: Map.put(attrs, :description, params["description"]),
+        else: attrs
+
     attrs
   end
 

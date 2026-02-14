@@ -138,7 +138,10 @@ defmodule SentinelCpWeb.Api.UpstreamGroupController do
     end
   end
 
-  def update_target(conn, %{"project_slug" => project_slug, "id" => group_id, "target_id" => target_id} = params) do
+  def update_target(
+        conn,
+        %{"project_slug" => project_slug, "id" => group_id, "target_id" => target_id} = params
+      ) do
     with {:ok, project} <- get_project(project_slug),
          {:ok, _group} <- get_group(group_id, project.id),
          target when not is_nil(target) <- Services.get_upstream_target(target_id),
@@ -161,7 +164,11 @@ defmodule SentinelCpWeb.Api.UpstreamGroupController do
     end
   end
 
-  def delete_target(conn, %{"project_slug" => project_slug, "id" => group_id, "target_id" => target_id}) do
+  def delete_target(conn, %{
+        "project_slug" => project_slug,
+        "id" => group_id,
+        "target_id" => target_id
+      }) do
     with {:ok, project} <- get_project(project_slug),
          {:ok, _group} <- get_group(group_id, project.id),
          target when not is_nil(target) <- Services.get_upstream_target(target_id),
@@ -203,7 +210,8 @@ defmodule SentinelCpWeb.Api.UpstreamGroupController do
   def create_discovery(conn, %{"project_slug" => project_slug, "id" => group_id} = params) do
     with {:ok, project} <- get_project(project_slug),
          {:ok, _group} <- get_group(group_id, project.id),
-         attrs <- Map.merge(params, %{"upstream_group_id" => group_id, "project_id" => project.id}),
+         attrs <-
+           Map.merge(params, %{"upstream_group_id" => group_id, "project_id" => project.id}),
          {:ok, source} <- Services.create_discovery_source(attrs) do
       conn
       |> put_status(:created)
@@ -357,6 +365,7 @@ defmodule SentinelCpWeb.Api.UpstreamGroupController do
   end
 
   defp mask_config(nil), do: %{}
+
   defp mask_config(config) when is_map(config) do
     if Map.has_key?(config, "token") do
       Map.put(config, "token", "****")

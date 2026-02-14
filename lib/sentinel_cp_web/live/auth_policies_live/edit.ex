@@ -79,24 +79,45 @@ defmodule SentinelCpWeb.AuthPoliciesLive.Edit do
         <form phx-submit="update_policy" class="space-y-6">
           <div class="form-control">
             <label class="label"><span class="label-text font-medium">Name</span></label>
-            <input type="text" name="name" value={@policy.name} required class="input input-bordered input-sm w-full" />
+            <input
+              type="text"
+              name="name"
+              value={@policy.name}
+              required
+              class="input input-bordered input-sm w-full"
+            />
           </div>
 
           <div class="form-control">
             <label class="label"><span class="label-text font-medium">Description</span></label>
-            <textarea name="description" rows="2" class="textarea textarea-bordered textarea-sm w-full">{@policy.description}</textarea>
+            <textarea
+              name="description"
+              rows="2"
+              class="textarea textarea-bordered textarea-sm w-full"
+            >{@policy.description}</textarea>
           </div>
 
           <div class="form-control">
             <label class="label"><span class="label-text font-medium">Auth Type</span></label>
-            <select name="auth_type" phx-change="select_type" phx-value-type="" class="select select-bordered select-sm w-48">
+            <select
+              name="auth_type"
+              phx-change="select_type"
+              phx-value-type=""
+              class="select select-bordered select-sm w-48"
+            >
               <option :for={t <- @auth_types} value={t} selected={t == @selected_type}>{t}</option>
             </select>
           </div>
 
           <div class="form-control">
             <label class="label cursor-pointer gap-2 justify-start">
-              <input type="checkbox" name="enabled" value="true" checked={@policy.enabled} class="checkbox checkbox-sm" />
+              <input
+                type="checkbox"
+                name="enabled"
+                value="true"
+                checked={@policy.enabled}
+                class="checkbox checkbox-sm"
+              />
               <span class="label-text font-medium">Enabled</span>
             </label>
           </div>
@@ -106,32 +127,65 @@ defmodule SentinelCpWeb.AuthPoliciesLive.Edit do
             <p class="text-xs font-semibold text-base-content/70">JWT Configuration</p>
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">Issuer</span></label>
-              <input type="text" name="config[issuer]" value={@policy.config["issuer"]} class="input input-bordered input-xs w-full" />
+              <input
+                type="text"
+                name="config[issuer]"
+                value={@policy.config["issuer"]}
+                class="input input-bordered input-xs w-full"
+              />
             </div>
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">Audience</span></label>
-              <input type="text" name="config[audience]" value={@policy.config["audience"]} class="input input-bordered input-xs w-full" />
+              <input
+                type="text"
+                name="config[audience]"
+                value={@policy.config["audience"]}
+                class="input input-bordered input-xs w-full"
+              />
             </div>
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">JWKS URL</span></label>
-              <input type="text" name="config[jwks_url]" value={@policy.config["jwks_url"]} class="input input-bordered input-xs w-full" />
+              <input
+                type="text"
+                name="config[jwks_url]"
+                value={@policy.config["jwks_url"]}
+                class="input input-bordered input-xs w-full"
+              />
             </div>
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">Required Claims</span></label>
-              <input type="text" name="config[required_claims]" value={@policy.config["required_claims"]} class="input input-bordered input-xs w-full" />
+              <input
+                type="text"
+                name="config[required_claims]"
+                value={@policy.config["required_claims"]}
+                class="input input-bordered input-xs w-full"
+              />
             </div>
           </div>
 
           <%!-- API Key config --%>
-          <div :if={@selected_type == "api_key"} class="space-y-2 ml-4 p-3 border-l-2 border-primary/30">
+          <div
+            :if={@selected_type == "api_key"}
+            class="space-y-2 ml-4 p-3 border-l-2 border-primary/30"
+          >
             <p class="text-xs font-semibold text-base-content/70">API Key Configuration</p>
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">Header Name</span></label>
-              <input type="text" name="config[header]" value={@policy.config["header"]} class="input input-bordered input-xs w-full" />
+              <input
+                type="text"
+                name="config[header]"
+                value={@policy.config["header"]}
+                class="input input-bordered input-xs w-full"
+              />
             </div>
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">Query Parameter</span></label>
-              <input type="text" name="config[query_param]" value={@policy.config["query_param"]} class="input input-bordered input-xs w-full" />
+              <input
+                type="text"
+                name="config[query_param]"
+                value={@policy.config["query_param"]}
+                class="input input-bordered input-xs w-full"
+              />
             </div>
           </div>
 
@@ -140,28 +194,58 @@ defmodule SentinelCpWeb.AuthPoliciesLive.Edit do
             <p class="text-xs font-semibold text-base-content/70">Basic Auth Configuration</p>
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">Realm</span></label>
-              <input type="text" name="config[realm]" value={@policy.config["realm"]} class="input input-bordered input-xs w-full" />
+              <input
+                type="text"
+                name="config[realm]"
+                value={@policy.config["realm"]}
+                class="input input-bordered input-xs w-full"
+              />
             </div>
             <div class="form-control">
-              <label class="label"><span class="label-text text-xs">Users (htpasswd format)</span></label>
-              <textarea name="config[users]" rows="4" class="textarea textarea-bordered textarea-xs w-full font-mono">{@policy.config["users"]}</textarea>
+              <label class="label">
+                <span class="label-text text-xs">Users (htpasswd format)</span>
+              </label>
+              <textarea
+                name="config[users]"
+                rows="4"
+                class="textarea textarea-bordered textarea-xs w-full font-mono"
+              >{@policy.config["users"]}</textarea>
             </div>
           </div>
 
           <%!-- Forward auth config --%>
-          <div :if={@selected_type == "forward_auth"} class="space-y-2 ml-4 p-3 border-l-2 border-primary/30">
+          <div
+            :if={@selected_type == "forward_auth"}
+            class="space-y-2 ml-4 p-3 border-l-2 border-primary/30"
+          >
             <p class="text-xs font-semibold text-base-content/70">Forward Auth Configuration</p>
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">Auth URL</span></label>
-              <input type="text" name="config[url]" value={@policy.config["url"]} class="input input-bordered input-xs w-full" />
+              <input
+                type="text"
+                name="config[url]"
+                value={@policy.config["url"]}
+                class="input input-bordered input-xs w-full"
+              />
             </div>
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">Headers to Forward</span></label>
-              <input type="text" name="config[headers_forward]" value={@policy.config["headers_forward"]} class="input input-bordered input-xs w-full" />
+              <input
+                type="text"
+                name="config[headers_forward]"
+                value={@policy.config["headers_forward"]}
+                class="input input-bordered input-xs w-full"
+              />
             </div>
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">Timeout (seconds)</span></label>
-              <input type="number" name="config[timeout]" value={@policy.config["timeout"]} class="input input-bordered input-xs w-24" min="1" />
+              <input
+                type="number"
+                name="config[timeout]"
+                value={@policy.config["timeout"]}
+                class="input input-bordered input-xs w-24"
+                min="1"
+              />
             </div>
           </div>
 
@@ -169,22 +253,40 @@ defmodule SentinelCpWeb.AuthPoliciesLive.Edit do
           <div :if={@selected_type == "mtls"} class="space-y-2 ml-4 p-3 border-l-2 border-primary/30">
             <p class="text-xs font-semibold text-base-content/70">mTLS Configuration</p>
             <div class="form-control">
-              <label class="label"><span class="label-text text-xs">CA Certificate (PEM)</span></label>
-              <textarea name="config[ca_cert]" rows="4" class="textarea textarea-bordered textarea-xs w-full font-mono">{@policy.config["ca_cert"]}</textarea>
+              <label class="label">
+                <span class="label-text text-xs">CA Certificate (PEM)</span>
+              </label>
+              <textarea
+                name="config[ca_cert]"
+                rows="4"
+                class="textarea textarea-bordered textarea-xs w-full font-mono"
+              >{@policy.config["ca_cert"]}</textarea>
             </div>
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">Required CN</span></label>
-              <input type="text" name="config[required_cn]" value={@policy.config["required_cn"]} class="input input-bordered input-xs w-full" />
+              <input
+                type="text"
+                name="config[required_cn]"
+                value={@policy.config["required_cn"]}
+                class="input input-bordered input-xs w-full"
+              />
             </div>
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">Allowed OUs</span></label>
-              <input type="text" name="config[allowed_ous]" value={@policy.config["allowed_ous"]} class="input input-bordered input-xs w-full" />
+              <input
+                type="text"
+                name="config[allowed_ous]"
+                value={@policy.config["allowed_ous"]}
+                class="input input-bordered input-xs w-full"
+              />
             </div>
           </div>
 
           <div class="flex gap-2 pt-4">
             <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
-            <.link navigate={show_path(@org, @project, @policy)} class="btn btn-ghost btn-sm">Cancel</.link>
+            <.link navigate={show_path(@org, @project, @policy)} class="btn btn-ghost btn-sm">
+              Cancel
+            </.link>
           </div>
         </form>
       </.k8s_section>

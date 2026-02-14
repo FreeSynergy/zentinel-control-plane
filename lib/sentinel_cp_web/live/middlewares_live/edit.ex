@@ -70,12 +70,22 @@ defmodule SentinelCpWeb.MiddlewaresLive.Edit do
         <form phx-submit="update_middleware" class="space-y-6">
           <div class="form-control">
             <label class="label"><span class="label-text font-medium">Name</span></label>
-            <input type="text" name="name" value={@middleware.name} required class="input input-bordered input-sm w-full" />
+            <input
+              type="text"
+              name="name"
+              value={@middleware.name}
+              required
+              class="input input-bordered input-sm w-full"
+            />
           </div>
 
           <div class="form-control">
             <label class="label"><span class="label-text font-medium">Description</span></label>
-            <textarea name="description" rows="2" class="textarea textarea-bordered textarea-sm w-full">{@middleware.description}</textarea>
+            <textarea
+              name="description"
+              rows="2"
+              class="textarea textarea-bordered textarea-sm w-full"
+            >{@middleware.description}</textarea>
           </div>
 
           <div class="form-control">
@@ -86,7 +96,13 @@ defmodule SentinelCpWeb.MiddlewaresLive.Edit do
 
           <div class="form-control">
             <label class="label cursor-pointer gap-2 justify-start">
-              <input type="checkbox" name="enabled" value="true" checked={@middleware.enabled} class="checkbox checkbox-sm" />
+              <input
+                type="checkbox"
+                name="enabled"
+                value="true"
+                checked={@middleware.enabled}
+                class="checkbox checkbox-sm"
+              />
               <span class="label-text font-medium">Enabled</span>
             </label>
           </div>
@@ -95,13 +111,19 @@ defmodule SentinelCpWeb.MiddlewaresLive.Edit do
             <p class="text-xs font-semibold text-base-content/70">Configuration</p>
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">Config (JSON)</span></label>
-              <textarea name="config[_json]" rows="6" class="textarea textarea-bordered textarea-xs w-full font-mono">{@config_json}</textarea>
+              <textarea
+                name="config[_json]"
+                rows="6"
+                class="textarea textarea-bordered textarea-xs w-full font-mono"
+              >{@config_json}</textarea>
             </div>
           </div>
 
           <div class="flex gap-2 pt-4">
             <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
-            <.link navigate={show_path(@org, @project, @middleware)} class="btn btn-ghost btn-sm">Cancel</.link>
+            <.link navigate={show_path(@org, @project, @middleware)} class="btn btn-ghost btn-sm">
+              Cancel
+            </.link>
           </div>
         </form>
       </.k8s_section>

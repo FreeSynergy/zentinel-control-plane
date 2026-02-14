@@ -77,17 +77,33 @@ defmodule SentinelCpWeb.AuthPoliciesLive.New do
         <form phx-submit="create_policy" class="space-y-6">
           <div class="form-control">
             <label class="label"><span class="label-text font-medium">Name</span></label>
-            <input type="text" name="name" required class="input input-bordered input-sm w-full" placeholder="e.g. JWT Validator" />
+            <input
+              type="text"
+              name="name"
+              required
+              class="input input-bordered input-sm w-full"
+              placeholder="e.g. JWT Validator"
+            />
           </div>
 
           <div class="form-control">
             <label class="label"><span class="label-text font-medium">Description</span></label>
-            <textarea name="description" rows="2" class="textarea textarea-bordered textarea-sm w-full" placeholder="Optional description"></textarea>
+            <textarea
+              name="description"
+              rows="2"
+              class="textarea textarea-bordered textarea-sm w-full"
+              placeholder="Optional description"
+            ></textarea>
           </div>
 
           <div class="form-control">
             <label class="label"><span class="label-text font-medium">Auth Type</span></label>
-            <select name="auth_type" phx-change="select_type" phx-value-type="" class="select select-bordered select-sm w-48">
+            <select
+              name="auth_type"
+              phx-change="select_type"
+              phx-value-type=""
+              class="select select-bordered select-sm w-48"
+            >
               <option :for={t <- @auth_types} value={t} selected={t == @selected_type}>{t}</option>
             </select>
           </div>
@@ -104,32 +120,67 @@ defmodule SentinelCpWeb.AuthPoliciesLive.New do
             <p class="text-xs font-semibold text-base-content/70">JWT Configuration</p>
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">Issuer</span></label>
-              <input type="text" name="config[issuer]" class="input input-bordered input-xs w-full" placeholder="https://auth.example.com" />
+              <input
+                type="text"
+                name="config[issuer]"
+                class="input input-bordered input-xs w-full"
+                placeholder="https://auth.example.com"
+              />
             </div>
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">Audience</span></label>
-              <input type="text" name="config[audience]" class="input input-bordered input-xs w-full" placeholder="my-api" />
+              <input
+                type="text"
+                name="config[audience]"
+                class="input input-bordered input-xs w-full"
+                placeholder="my-api"
+              />
             </div>
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">JWKS URL</span></label>
-              <input type="text" name="config[jwks_url]" class="input input-bordered input-xs w-full" placeholder="https://auth.example.com/.well-known/jwks.json" />
+              <input
+                type="text"
+                name="config[jwks_url]"
+                class="input input-bordered input-xs w-full"
+                placeholder="https://auth.example.com/.well-known/jwks.json"
+              />
             </div>
             <div class="form-control">
-              <label class="label"><span class="label-text text-xs">Required Claims (comma-separated)</span></label>
-              <input type="text" name="config[required_claims]" class="input input-bordered input-xs w-full" placeholder="sub, email" />
+              <label class="label">
+                <span class="label-text text-xs">Required Claims (comma-separated)</span>
+              </label>
+              <input
+                type="text"
+                name="config[required_claims]"
+                class="input input-bordered input-xs w-full"
+                placeholder="sub, email"
+              />
             </div>
           </div>
 
           <%!-- API Key config --%>
-          <div :if={@selected_type == "api_key"} class="space-y-2 ml-4 p-3 border-l-2 border-primary/30">
+          <div
+            :if={@selected_type == "api_key"}
+            class="space-y-2 ml-4 p-3 border-l-2 border-primary/30"
+          >
             <p class="text-xs font-semibold text-base-content/70">API Key Configuration</p>
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">Header Name</span></label>
-              <input type="text" name="config[header]" class="input input-bordered input-xs w-full" placeholder="X-API-Key" />
+              <input
+                type="text"
+                name="config[header]"
+                class="input input-bordered input-xs w-full"
+                placeholder="X-API-Key"
+              />
             </div>
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">Query Parameter</span></label>
-              <input type="text" name="config[query_param]" class="input input-bordered input-xs w-full" placeholder="api_key" />
+              <input
+                type="text"
+                name="config[query_param]"
+                class="input input-bordered input-xs w-full"
+                placeholder="api_key"
+              />
             </div>
           </div>
 
@@ -138,28 +189,61 @@ defmodule SentinelCpWeb.AuthPoliciesLive.New do
             <p class="text-xs font-semibold text-base-content/70">Basic Auth Configuration</p>
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">Realm</span></label>
-              <input type="text" name="config[realm]" class="input input-bordered input-xs w-full" placeholder="Restricted" />
+              <input
+                type="text"
+                name="config[realm]"
+                class="input input-bordered input-xs w-full"
+                placeholder="Restricted"
+              />
             </div>
             <div class="form-control">
-              <label class="label"><span class="label-text text-xs">Users (htpasswd format, one per line)</span></label>
-              <textarea name="config[users]" rows="4" class="textarea textarea-bordered textarea-xs w-full font-mono" placeholder="user:$apr1$..."></textarea>
+              <label class="label">
+                <span class="label-text text-xs">Users (htpasswd format, one per line)</span>
+              </label>
+              <textarea
+                name="config[users]"
+                rows="4"
+                class="textarea textarea-bordered textarea-xs w-full font-mono"
+                placeholder="user:$apr1$..."
+              ></textarea>
             </div>
           </div>
 
           <%!-- Forward auth config --%>
-          <div :if={@selected_type == "forward_auth"} class="space-y-2 ml-4 p-3 border-l-2 border-primary/30">
+          <div
+            :if={@selected_type == "forward_auth"}
+            class="space-y-2 ml-4 p-3 border-l-2 border-primary/30"
+          >
             <p class="text-xs font-semibold text-base-content/70">Forward Auth Configuration</p>
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">Auth URL</span></label>
-              <input type="text" name="config[url]" class="input input-bordered input-xs w-full" placeholder="http://auth-svc:4181/verify" />
+              <input
+                type="text"
+                name="config[url]"
+                class="input input-bordered input-xs w-full"
+                placeholder="http://auth-svc:4181/verify"
+              />
             </div>
             <div class="form-control">
-              <label class="label"><span class="label-text text-xs">Headers to Forward (comma-separated)</span></label>
-              <input type="text" name="config[headers_forward]" class="input input-bordered input-xs w-full" placeholder="Authorization, X-Forwarded-User" />
+              <label class="label">
+                <span class="label-text text-xs">Headers to Forward (comma-separated)</span>
+              </label>
+              <input
+                type="text"
+                name="config[headers_forward]"
+                class="input input-bordered input-xs w-full"
+                placeholder="Authorization, X-Forwarded-User"
+              />
             </div>
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">Timeout (seconds)</span></label>
-              <input type="number" name="config[timeout]" class="input input-bordered input-xs w-24" placeholder="5" min="1" />
+              <input
+                type="number"
+                name="config[timeout]"
+                class="input input-bordered input-xs w-24"
+                placeholder="5"
+                min="1"
+              />
             </div>
           </div>
 
@@ -167,16 +251,35 @@ defmodule SentinelCpWeb.AuthPoliciesLive.New do
           <div :if={@selected_type == "mtls"} class="space-y-2 ml-4 p-3 border-l-2 border-primary/30">
             <p class="text-xs font-semibold text-base-content/70">mTLS Configuration</p>
             <div class="form-control">
-              <label class="label"><span class="label-text text-xs">CA Certificate (PEM)</span></label>
-              <textarea name="config[ca_cert]" rows="4" class="textarea textarea-bordered textarea-xs w-full font-mono" placeholder="-----BEGIN CERTIFICATE-----"></textarea>
+              <label class="label">
+                <span class="label-text text-xs">CA Certificate (PEM)</span>
+              </label>
+              <textarea
+                name="config[ca_cert]"
+                rows="4"
+                class="textarea textarea-bordered textarea-xs w-full font-mono"
+                placeholder="-----BEGIN CERTIFICATE-----"
+              ></textarea>
             </div>
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">Required CN</span></label>
-              <input type="text" name="config[required_cn]" class="input input-bordered input-xs w-full" placeholder="client.example.com" />
+              <input
+                type="text"
+                name="config[required_cn]"
+                class="input input-bordered input-xs w-full"
+                placeholder="client.example.com"
+              />
             </div>
             <div class="form-control">
-              <label class="label"><span class="label-text text-xs">Allowed OUs (comma-separated)</span></label>
-              <input type="text" name="config[allowed_ous]" class="input input-bordered input-xs w-full" placeholder="engineering, platform" />
+              <label class="label">
+                <span class="label-text text-xs">Allowed OUs (comma-separated)</span>
+              </label>
+              <input
+                type="text"
+                name="config[allowed_ous]"
+                class="input input-bordered input-xs w-full"
+                placeholder="engineering, platform"
+              />
             </div>
           </div>
 

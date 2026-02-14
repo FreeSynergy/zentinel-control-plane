@@ -22,10 +22,11 @@ defmodule SentinelCp.Events.Adapters.Teams do
               },
               %{
                 type: "FactSet",
-                facts: [
-                  %{title: "Event", value: event.type},
-                  %{title: "Time", value: DateTime.to_iso8601(event.emitted_at)}
-                ] ++ payload_facts(event.payload)
+                facts:
+                  [
+                    %{title: "Event", value: event.type},
+                    %{title: "Time", value: DateTime.to_iso8601(event.emitted_at)}
+                  ] ++ payload_facts(event.payload)
               }
             ]
           }

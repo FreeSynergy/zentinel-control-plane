@@ -68,18 +68,31 @@ defmodule SentinelCpWeb.ServiceTemplatesLive.New do
         <form phx-submit="create_template" class="space-y-6">
           <div class="form-control">
             <label class="label"><span class="label-text font-medium">Name</span></label>
-            <input type="text" name="name" required class="input input-bordered input-sm w-full" placeholder="e.g. REST API" />
+            <input
+              type="text"
+              name="name"
+              required
+              class="input input-bordered input-sm w-full"
+              placeholder="e.g. REST API"
+            />
           </div>
 
           <div class="form-control">
             <label class="label"><span class="label-text font-medium">Description</span></label>
-            <textarea name="description" rows="2" class="textarea textarea-bordered textarea-sm w-full" placeholder="Template description"></textarea>
+            <textarea
+              name="description"
+              rows="2"
+              class="textarea textarea-bordered textarea-sm w-full"
+              placeholder="Template description"
+            ></textarea>
           </div>
 
           <div class="form-control">
             <label class="label"><span class="label-text font-medium">Category</span></label>
             <select name="category" required class="select select-bordered select-sm w-48">
-              <option :for={cat <- ServiceTemplate.categories()} value={cat}>{String.capitalize(cat)}</option>
+              <option :for={cat <- ServiceTemplate.categories()} value={cat}>
+                {String.capitalize(cat)}
+              </option>
             </select>
           </div>
 
@@ -87,33 +100,60 @@ defmodule SentinelCpWeb.ServiceTemplatesLive.New do
 
           <div class="form-control">
             <label class="label"><span class="label-text text-xs">Route Path</span></label>
-            <input type="text" name="route_path" class="input input-bordered input-xs w-full" placeholder="/api/*" />
+            <input
+              type="text"
+              name="route_path"
+              class="input input-bordered input-xs w-full"
+              placeholder="/api/*"
+            />
           </div>
 
           <div class="form-control">
             <label class="label"><span class="label-text text-xs">Upstream URL</span></label>
-            <input type="text" name="upstream_url" class="input input-bordered input-xs w-full" placeholder="http://backend:8080" />
+            <input
+              type="text"
+              name="upstream_url"
+              class="input input-bordered input-xs w-full"
+              placeholder="http://backend:8080"
+            />
           </div>
 
           <div class="grid grid-cols-2 gap-4">
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">Response Status</span></label>
-              <input type="number" name="respond_status" class="input input-bordered input-xs w-24" placeholder="200" />
+              <input
+                type="number"
+                name="respond_status"
+                class="input input-bordered input-xs w-24"
+                placeholder="200"
+              />
             </div>
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">Timeout (seconds)</span></label>
-              <input type="number" name="timeout_seconds" class="input input-bordered input-xs w-24" placeholder="30" />
+              <input
+                type="number"
+                name="timeout_seconds"
+                class="input input-bordered input-xs w-24"
+                placeholder="30"
+              />
             </div>
           </div>
 
           <div class="form-control">
             <label class="label"><span class="label-text text-xs">Response Body</span></label>
-            <textarea name="respond_body" rows="2" class="textarea textarea-bordered textarea-xs w-full font-mono" placeholder="OK"></textarea>
+            <textarea
+              name="respond_body"
+              rows="2"
+              class="textarea textarea-bordered textarea-xs w-full font-mono"
+              placeholder="OK"
+            ></textarea>
           </div>
 
           <div class="flex gap-2 pt-4">
             <button type="submit" class="btn btn-primary btn-sm">Create Template</button>
-            <.link navigate={templates_path(@org, @project)} class="btn btn-ghost btn-sm">Cancel</.link>
+            <.link navigate={templates_path(@org, @project)} class="btn btn-ghost btn-sm">
+              Cancel
+            </.link>
           </div>
         </form>
       </.k8s_section>

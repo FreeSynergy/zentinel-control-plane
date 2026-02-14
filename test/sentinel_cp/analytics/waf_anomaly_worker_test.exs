@@ -21,7 +21,8 @@ defmodule SentinelCp.Analytics.WafAnomalyWorkerTest do
       for _i <- 1..50 do
         %{
           "project_id" => project.id,
-          "timestamp" => DateTime.to_iso8601(DateTime.add(now, -Enum.random(1..168) * 3600, :second)),
+          "timestamp" =>
+            DateTime.to_iso8601(DateTime.add(now, -Enum.random(1..168) * 3600, :second)),
           "rule_type" => Enum.random(["sqli", "xss"]),
           "action" => "blocked",
           "severity" => "medium",

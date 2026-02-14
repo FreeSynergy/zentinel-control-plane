@@ -89,8 +89,8 @@ defmodule SentinelCp.ConfigExport do
 
     changes =
       diff_list(current["environments"], config["environments"] || [], "environment") ++
-      diff_list(current["upstream_groups"], config["upstream_groups"] || [], "upstream_group") ++
-      diff_list(current["services"], config["services"] || [], "service")
+        diff_list(current["upstream_groups"], config["upstream_groups"] || [], "upstream_group") ++
+        diff_list(current["services"], config["services"] || [], "service")
 
     {:ok, changes}
   end

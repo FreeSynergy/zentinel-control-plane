@@ -21,7 +21,8 @@ defmodule SentinelCp.Services.Acme.Client do
               {:ok, %{kid: kid(), nonce: nonce()}} | {:error, term()}
 
   @callback new_order(url(), kid(), account_key(), nonce(), [String.t()]) ::
-              {:ok, %{order_url: url(), authorizations: [url()], finalize_url: url(), nonce: nonce()}}
+              {:ok,
+               %{order_url: url(), authorizations: [url()], finalize_url: url(), nonce: nonce()}}
               | {:error, term()}
 
   @callback get_authorization(url(), kid(), account_key(), nonce()) ::

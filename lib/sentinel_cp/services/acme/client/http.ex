@@ -221,7 +221,10 @@ defmodule SentinelCp.Services.Acme.Client.HTTP do
 
     case Req.post(url,
            json: jws_body,
-           headers: [{"content-type", "application/jose+json"}, {"accept", "application/pem-certificate-chain"}]
+           headers: [
+             {"content-type", "application/jose+json"},
+             {"accept", "application/pem-certificate-chain"}
+           ]
          ) do
       {:ok, %{status: 200, body: body, headers: headers}} ->
         cert_pem = if is_binary(body), do: body, else: Jason.encode!(body)
@@ -309,7 +312,9 @@ defmodule SentinelCp.Services.Acme.Client.HTTP do
 
   defp parse_der_integer(<<0x02, len::8, bytes::binary-size(len), rest::binary>>) do
     # Strip leading zero byte if present (sign byte for positive integers)
-    stripped = if :binary.first(bytes) == 0 and len > 1, do: binary_part(bytes, 1, len - 1), else: bytes
+    stripped =
+      if :binary.first(bytes) == 0 and len > 1, do: binary_part(bytes, 1, len - 1), else: bytes
+
     {stripped, rest}
   end
 

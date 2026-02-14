@@ -11,7 +11,7 @@ defmodule SentinelCp.Bundles.CompileWorker do
 
   alias SentinelCp.Bundles
   alias SentinelCp.Bundles.{Compiler, Risk, Signing, Storage}
-  alias SentinelCp.{Audit, Services}
+  alias SentinelCp.{Audit, Plugins, Services}
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"bundle_id" => bundle_id}}) do
@@ -110,15 +110,20 @@ defmodule SentinelCp.Bundles.CompileWorker do
   end
 
   defp build_extra_files(project_id) do
-    case Services.get_internal_ca(project_id) do
-      nil ->
-        []
+    ca_files =
+      case Services.get_internal_ca(project_id) do
+        nil ->
+          []
 
-      ca ->
-        [
-          {"internal-ca/ca.pem", ca.ca_cert_pem},
-          {"internal-ca/crl.pem", ca.crl_pem || ""}
-        ]
-    end
+        ca ->
+          [
+            {"internal-ca/ca.pem", ca.ca_cert_pem},
+            {"internal-ca/crl.pem", ca.crl_pem || ""}
+          ]
+      end
+
+    plugin_files = Plugins.collect_plugin_files(project_id)
+
+    ca_files ++ plugin_files
   end
 end

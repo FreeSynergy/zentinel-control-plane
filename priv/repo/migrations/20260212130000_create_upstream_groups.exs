@@ -26,8 +26,8 @@ defmodule SentinelCp.Repo.Migrations.CreateUpstreamGroups do
       add :id, :binary_id, primary_key: true
 
       add :upstream_group_id,
-           references(:upstream_groups, type: :binary_id, on_delete: :delete_all),
-           null: false
+          references(:upstream_groups, type: :binary_id, on_delete: :delete_all),
+          null: false
 
       add :host, :string, null: false
       add :port, :integer, null: false
@@ -42,7 +42,7 @@ defmodule SentinelCp.Repo.Migrations.CreateUpstreamGroups do
 
     alter table(:services) do
       add :upstream_group_id,
-           references(:upstream_groups, type: :binary_id, on_delete: :nilify_all)
+          references(:upstream_groups, type: :binary_id, on_delete: :nilify_all)
     end
   end
 end

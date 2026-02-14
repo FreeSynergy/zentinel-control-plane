@@ -26,15 +26,17 @@ defmodule SentinelCp.PortalTest do
 
     test "portal settings work with custom values" do
       project = project_fixture()
-      {:ok, project} = SentinelCp.Projects.update_project(project, %{
-        settings: %{
-          "portal_enabled" => true,
-          "portal_access" => "public",
-          "portal_title" => "My API Portal",
-          "portal_description" => "Custom description",
-          "portal_logo_url" => "https://example.com/logo.png"
-        }
-      })
+
+      {:ok, project} =
+        SentinelCp.Projects.update_project(project, %{
+          settings: %{
+            "portal_enabled" => true,
+            "portal_access" => "public",
+            "portal_title" => "My API Portal",
+            "portal_description" => "Custom description",
+            "portal_logo_url" => "https://example.com/logo.png"
+          }
+        })
 
       assert Project.portal_enabled?(project)
       assert Project.portal_access(project) == "public"
@@ -62,28 +64,29 @@ defmodule SentinelCp.PortalTest do
 
   describe "get_spec_paths/1" do
     test "extracts paths from spec data" do
-      spec = openapi_spec_fixture(%{
-        spec_data: %{
-          "openapi" => "3.0.0",
-          "info" => %{"title" => "Test", "version" => "1.0"},
-          "paths" => %{
-            "/users" => %{
-              "get" => %{
-                "summary" => "List users",
-                "tags" => ["Users"],
-                "parameters" => [],
-                "responses" => %{"200" => %{"description" => "OK"}}
-              },
-              "post" => %{
-                "summary" => "Create user",
-                "tags" => ["Users"],
-                "parameters" => [],
-                "responses" => %{"201" => %{"description" => "Created"}}
+      spec =
+        openapi_spec_fixture(%{
+          spec_data: %{
+            "openapi" => "3.0.0",
+            "info" => %{"title" => "Test", "version" => "1.0"},
+            "paths" => %{
+              "/users" => %{
+                "get" => %{
+                  "summary" => "List users",
+                  "tags" => ["Users"],
+                  "parameters" => [],
+                  "responses" => %{"200" => %{"description" => "OK"}}
+                },
+                "post" => %{
+                  "summary" => "Create user",
+                  "tags" => ["Users"],
+                  "parameters" => [],
+                  "responses" => %{"201" => %{"description" => "Created"}}
+                }
               }
             }
           }
-        }
-      })
+        })
 
       paths = Portal.get_spec_paths(spec)
       assert length(paths) == 2
@@ -101,24 +104,25 @@ defmodule SentinelCp.PortalTest do
 
   describe "get_spec_schemas/1" do
     test "extracts schemas from spec data" do
-      spec = openapi_spec_fixture(%{
-        spec_data: %{
-          "openapi" => "3.0.0",
-          "info" => %{"title" => "Test", "version" => "1.0"},
-          "paths" => %{},
-          "components" => %{
-            "schemas" => %{
-              "User" => %{
-                "type" => "object",
-                "properties" => %{
-                  "id" => %{"type" => "integer"},
-                  "name" => %{"type" => "string"}
+      spec =
+        openapi_spec_fixture(%{
+          spec_data: %{
+            "openapi" => "3.0.0",
+            "info" => %{"title" => "Test", "version" => "1.0"},
+            "paths" => %{},
+            "components" => %{
+              "schemas" => %{
+                "User" => %{
+                  "type" => "object",
+                  "properties" => %{
+                    "id" => %{"type" => "integer"},
+                    "name" => %{"type" => "string"}
+                  }
                 }
               }
             }
           }
-        }
-      })
+        })
 
       schemas = Portal.get_spec_schemas(spec)
       assert Map.has_key?(schemas, "User")
@@ -160,14 +164,23 @@ defmodule SentinelCp.PortalTest do
     end
 
     test "includes headers" do
-      cmd = Portal.build_curl_command("POST", "https://api.example.com/users",
-        [{"Content-Type", "application/json"}])
+      cmd =
+        Portal.build_curl_command("POST", "https://api.example.com/users", [
+          {"Content-Type", "application/json"}
+        ])
+
       assert cmd =~ "-H 'Content-Type: application/json'"
     end
 
     test "includes body" do
-      cmd = Portal.build_curl_command("POST", "https://api.example.com/users",
-        [], ~s({"name": "test"}))
+      cmd =
+        Portal.build_curl_command(
+          "POST",
+          "https://api.example.com/users",
+          [],
+          ~s({"name": "test"})
+        )
+
       assert cmd =~ ~s(-d '{"name": "test"}')
     end
   end

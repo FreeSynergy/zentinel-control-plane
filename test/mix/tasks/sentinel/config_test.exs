@@ -17,9 +17,10 @@ defmodule Mix.Tasks.Sentinel.ConfigTest do
       create_environment(project, "staging")
       create_service(project, "api", "/api")
 
-      output = capture_io(fn ->
-        Mix.Tasks.Sentinel.Config.Export.run([project.slug])
-      end)
+      output =
+        capture_io(fn ->
+          Mix.Tasks.Sentinel.Config.Export.run([project.slug])
+        end)
 
       assert output =~ "version"
       assert output =~ project.name
@@ -31,9 +32,10 @@ defmodule Mix.Tasks.Sentinel.ConfigTest do
     test "exports valid JSON with --format json", %{project: project} do
       create_service(project, "web", "/web")
 
-      output = capture_io(fn ->
-        Mix.Tasks.Sentinel.Config.Export.run([project.slug, "--format", "json"])
-      end)
+      output =
+        capture_io(fn ->
+          Mix.Tasks.Sentinel.Config.Export.run([project.slug, "--format", "json"])
+        end)
 
       assert {:ok, parsed} = Jason.decode(output)
       assert parsed["version"] == "1.0"
@@ -41,7 +43,8 @@ defmodule Mix.Tasks.Sentinel.ConfigTest do
     end
 
     test "exports to file with --output", %{project: project} do
-      path = Path.join(System.tmp_dir!(), "test_export_#{System.unique_integer([:positive])}.yaml")
+      path =
+        Path.join(System.tmp_dir!(), "test_export_#{System.unique_integer([:positive])}.yaml")
 
       on_exit(fn -> File.rm(path) end)
 
@@ -57,10 +60,10 @@ defmodule Mix.Tasks.Sentinel.ConfigTest do
 
     test "errors for missing project" do
       assert catch_exit(
-        capture_io(fn ->
-          Mix.Tasks.Sentinel.Config.Export.run(["nonexistent-project"])
-        end)
-      ) == {:shutdown, 1}
+               capture_io(fn ->
+                 Mix.Tasks.Sentinel.Config.Export.run(["nonexistent-project"])
+               end)
+             ) == {:shutdown, 1}
     end
   end
 
@@ -81,9 +84,10 @@ defmodule Mix.Tasks.Sentinel.ConfigTest do
       path = write_temp_json(config)
       on_exit(fn -> File.rm(path) end)
 
-      output = capture_io(fn ->
-        Mix.Tasks.Sentinel.Config.Apply.run([project.slug, path, "--yes"])
-      end)
+      output =
+        capture_io(fn ->
+          Mix.Tasks.Sentinel.Config.Apply.run([project.slug, path, "--yes"])
+        end)
 
       assert output =~ "Created: 2"
       assert output =~ "Skipped: 0"
@@ -99,9 +103,10 @@ defmodule Mix.Tasks.Sentinel.ConfigTest do
       path = write_temp_json(config)
       on_exit(fn -> File.rm(path) end)
 
-      output = capture_io(fn ->
-        Mix.Tasks.Sentinel.Config.Apply.run([project.slug, path, "--dry-run"])
-      end)
+      output =
+        capture_io(fn ->
+          Mix.Tasks.Sentinel.Config.Apply.run([project.slug, path, "--dry-run"])
+        end)
 
       assert output =~ "Dry run"
       assert output =~ "environment: new-env"
@@ -114,10 +119,14 @@ defmodule Mix.Tasks.Sentinel.ConfigTest do
 
     test "errors for missing file", %{project: project} do
       assert catch_exit(
-        capture_io(fn ->
-          Mix.Tasks.Sentinel.Config.Apply.run([project.slug, "/nonexistent/file.json", "--yes"])
-        end)
-      ) == {:shutdown, 1}
+               capture_io(fn ->
+                 Mix.Tasks.Sentinel.Config.Apply.run([
+                   project.slug,
+                   "/nonexistent/file.json",
+                   "--yes"
+                 ])
+               end)
+             ) == {:shutdown, 1}
     end
   end
 
@@ -134,9 +143,10 @@ defmodule Mix.Tasks.Sentinel.ConfigTest do
       path = write_temp_json(config)
       on_exit(fn -> File.rm(path) end)
 
-      output = capture_io(fn ->
-        Mix.Tasks.Sentinel.Config.Diff.run([project.slug, path])
-      end)
+      output =
+        capture_io(fn ->
+          Mix.Tasks.Sentinel.Config.Diff.run([project.slug, path])
+        end)
 
       assert output =~ "+ environment: new-env"
       assert output =~ "+ service: new-svc"
@@ -155,9 +165,10 @@ defmodule Mix.Tasks.Sentinel.ConfigTest do
       path = write_temp_json(config)
       on_exit(fn -> File.rm(path) end)
 
-      output = capture_io(fn ->
-        Mix.Tasks.Sentinel.Config.Diff.run([project.slug, path])
-      end)
+      output =
+        capture_io(fn ->
+          Mix.Tasks.Sentinel.Config.Diff.run([project.slug, path])
+        end)
 
       assert output =~ "- environment: old-env"
       assert output =~ "removal(s)"
@@ -169,9 +180,10 @@ defmodule Mix.Tasks.Sentinel.ConfigTest do
       path = write_temp_json(current)
       on_exit(fn -> File.rm(path) end)
 
-      output = capture_io(fn ->
-        Mix.Tasks.Sentinel.Config.Diff.run([project.slug, path])
-      end)
+      output =
+        capture_io(fn ->
+          Mix.Tasks.Sentinel.Config.Diff.run([project.slug, path])
+        end)
 
       assert output =~ "No differences found"
     end
@@ -181,10 +193,10 @@ defmodule Mix.Tasks.Sentinel.ConfigTest do
       on_exit(fn -> File.rm(path) end)
 
       assert catch_exit(
-        capture_io(fn ->
-          Mix.Tasks.Sentinel.Config.Diff.run(["nonexistent-project", path])
-        end)
-      ) == {:shutdown, 1}
+               capture_io(fn ->
+                 Mix.Tasks.Sentinel.Config.Diff.run(["nonexistent-project", path])
+               end)
+             ) == {:shutdown, 1}
     end
   end
 

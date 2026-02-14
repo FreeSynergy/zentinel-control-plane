@@ -57,7 +57,8 @@ defmodule SentinelCp.Services.KdlGeneratorTrustStoreTest do
 
       services = [test_service(group_id)]
 
-      kdl = KdlGenerator.build_kdl(services, default_config(), [group], [], [], %{}, [trust_store])
+      kdl =
+        KdlGenerator.build_kdl(services, default_config(), [group], [], [], %{}, [trust_store])
 
       assert kdl =~ "trust_stores {"
       assert kdl =~ ~s(store "internal-ca")
@@ -91,7 +92,8 @@ defmodule SentinelCp.Services.KdlGeneratorTrustStoreTest do
 
       services = [test_service(group_id)]
 
-      kdl = KdlGenerator.build_kdl(services, default_config(), [group], [], [], %{}, [trust_store])
+      kdl =
+        KdlGenerator.build_kdl(services, default_config(), [group], [], [], %{}, [trust_store])
 
       assert kdl =~ "tls {"
       assert kdl =~ "verify true"

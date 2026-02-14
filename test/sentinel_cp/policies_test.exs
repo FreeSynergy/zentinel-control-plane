@@ -87,13 +87,19 @@ defmodule SentinelCp.PoliciesTest do
 
   describe "expression evaluator" do
     test "evaluates equality" do
-      assert Evaluator.evaluate(~s(strategy == "rolling"), %{"strategy" => "rolling"}) == {:ok, true}
-      assert Evaluator.evaluate(~s(strategy == "canary"), %{"strategy" => "rolling"}) == {:ok, false}
+      assert Evaluator.evaluate(~s(strategy == "rolling"), %{"strategy" => "rolling"}) ==
+               {:ok, true}
+
+      assert Evaluator.evaluate(~s(strategy == "canary"), %{"strategy" => "rolling"}) ==
+               {:ok, false}
     end
 
     test "evaluates inequality" do
-      assert Evaluator.evaluate(~s(day_of_week != "friday"), %{"day_of_week" => "monday"}) == {:ok, true}
-      assert Evaluator.evaluate(~s(day_of_week != "friday"), %{"day_of_week" => "friday"}) == {:ok, false}
+      assert Evaluator.evaluate(~s(day_of_week != "friday"), %{"day_of_week" => "monday"}) ==
+               {:ok, true}
+
+      assert Evaluator.evaluate(~s(day_of_week != "friday"), %{"day_of_week" => "friday"}) ==
+               {:ok, false}
     end
 
     test "evaluates numeric comparisons" do
@@ -105,8 +111,11 @@ defmodule SentinelCp.PoliciesTest do
     end
 
     test "evaluates boolean equality" do
-      assert Evaluator.evaluate("has_rate_limit == true", %{"has_rate_limit" => true}) == {:ok, true}
-      assert Evaluator.evaluate("has_rate_limit == true", %{"has_rate_limit" => false}) == {:ok, false}
+      assert Evaluator.evaluate("has_rate_limit == true", %{"has_rate_limit" => true}) ==
+               {:ok, true}
+
+      assert Evaluator.evaluate("has_rate_limit == true", %{"has_rate_limit" => false}) ==
+               {:ok, false}
     end
 
     test "evaluates 'in' operator" do
@@ -143,7 +152,9 @@ defmodule SentinelCp.PoliciesTest do
     test "evaluates AND expressions" do
       expr = ~s(approvals >= 2 && strategy == "rolling")
       assert Evaluator.evaluate(expr, %{"approvals" => 3, "strategy" => "rolling"}) == {:ok, true}
-      assert Evaluator.evaluate(expr, %{"approvals" => 1, "strategy" => "rolling"}) == {:ok, false}
+
+      assert Evaluator.evaluate(expr, %{"approvals" => 1, "strategy" => "rolling"}) ==
+               {:ok, false}
     end
 
     test "evaluates OR expressions" do

@@ -82,29 +82,51 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.Edit do
         <form phx-submit="update_group" class="space-y-6">
           <div class="form-control">
             <label class="label"><span class="label-text font-medium">Name</span></label>
-            <input type="text" name="name" value={@group.name} required class="input input-bordered input-sm w-full" />
+            <input
+              type="text"
+              name="name"
+              value={@group.name}
+              required
+              class="input input-bordered input-sm w-full"
+            />
           </div>
 
           <div class="form-control">
             <label class="label"><span class="label-text font-medium">Description</span></label>
-            <textarea name="description" rows="2" class="textarea textarea-bordered textarea-sm w-full">{@group.description}</textarea>
+            <textarea
+              name="description"
+              rows="2"
+              class="textarea textarea-bordered textarea-sm w-full"
+            >{@group.description}</textarea>
           </div>
 
           <div class="form-control">
             <label class="label"><span class="label-text font-medium">Algorithm</span></label>
             <select name="algorithm" class="select select-bordered select-sm w-48">
-              <option :for={alg <- @algorithms} value={alg} selected={alg == @group.algorithm}>{alg}</option>
+              <option :for={alg <- @algorithms} value={alg} selected={alg == @group.algorithm}>
+                {alg}
+              </option>
             </select>
           </div>
 
           <div :if={@trust_stores != []} class="form-control">
-            <label class="label"><span class="label-text font-medium">Trust Store (optional)</span></label>
+            <label class="label">
+              <span class="label-text font-medium">Trust Store (optional)</span>
+            </label>
             <select name="trust_store_id" class="select select-bordered select-sm w-full">
               <option value="">None</option>
-              <option :for={ts <- @trust_stores} value={ts.id} selected={ts.id == @group.trust_store_id}>{ts.name}</option>
+              <option
+                :for={ts <- @trust_stores}
+                value={ts.id}
+                selected={ts.id == @group.trust_store_id}
+              >
+                {ts.name}
+              </option>
             </select>
             <label class="label">
-              <span class="label-text-alt text-base-content/50">CA bundle for verifying upstream TLS connections</span>
+              <span class="label-text-alt text-base-content/50">
+                CA bundle for verifying upstream TLS connections
+              </span>
             </label>
           </div>
 
@@ -154,7 +176,9 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.Edit do
                 />
               </div>
               <div class="form-control">
-                <label class="label"><span class="label-text text-xs">Half-Open Max Requests</span></label>
+                <label class="label">
+                  <span class="label-text text-xs">Half-Open Max Requests</span>
+                </label>
                 <input
                   type="number"
                   name="circuit_breaker[half_open_max_requests]"
@@ -169,7 +193,9 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.Edit do
 
           <div class="flex gap-2 pt-4">
             <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
-            <.link navigate={group_show_path(@org, @project, @group)} class="btn btn-ghost btn-sm">Cancel</.link>
+            <.link navigate={group_show_path(@org, @project, @group)} class="btn btn-ghost btn-sm">
+              Cancel
+            </.link>
           </div>
         </form>
       </.k8s_section>

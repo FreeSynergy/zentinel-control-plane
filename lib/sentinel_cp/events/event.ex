@@ -54,10 +54,13 @@ defmodule SentinelCp.Events.Event do
   """
   def matches_pattern?(event_type, pattern) do
     cond do
-      pattern == "*" -> true
+      pattern == "*" ->
+        true
+
       String.ends_with?(pattern, ".*") ->
         prefix = String.trim_trailing(pattern, ".*")
         String.starts_with?(event_type, prefix <> ".")
+
       true ->
         event_type == pattern
     end

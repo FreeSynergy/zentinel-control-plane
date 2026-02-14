@@ -160,7 +160,8 @@ defmodule SentinelCp.OpenApiFixtures do
         openapi_version: attrs[:openapi_version] || "3.0.3",
         spec_version: attrs[:spec_version] || "1.0.0",
         spec_data: spec_data,
-        checksum: attrs[:checksum] || :crypto.hash(:sha256, content) |> Base.encode16(case: :lower),
+        checksum:
+          attrs[:checksum] || :crypto.hash(:sha256, content) |> Base.encode16(case: :lower),
         paths_count: attrs[:paths_count] || map_size(spec_data["paths"] || %{}),
         project_id: project.id
       })

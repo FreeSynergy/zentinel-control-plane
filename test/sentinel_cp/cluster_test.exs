@@ -84,9 +84,19 @@ defmodule SentinelCp.ClusterTest do
       inventory = Backup.system_inventory()
 
       expected_keys = [
-        :projects, :services, :nodes, :bundles, :active_rollouts,
-        :environments, :upstream_groups, :policies, :slos, :alert_rules,
-        :federation_peers, :cluster_info, :generated_at
+        :projects,
+        :services,
+        :nodes,
+        :bundles,
+        :active_rollouts,
+        :environments,
+        :upstream_groups,
+        :policies,
+        :slos,
+        :alert_rules,
+        :federation_peers,
+        :cluster_info,
+        :generated_at
       ]
 
       Enum.each(expected_keys, fn key ->

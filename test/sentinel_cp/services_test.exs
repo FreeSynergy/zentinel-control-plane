@@ -528,7 +528,9 @@ defmodule SentinelCp.ServicesTest do
           name: "Split",
           route_path: "/api/*",
           upstream_url: "http://api:8080",
-          traffic_split: %{"splits" => [%{"upstream_group_id" => Ecto.UUID.generate(), "weight" => 100}]}
+          traffic_split: %{
+            "splits" => [%{"upstream_group_id" => Ecto.UUID.generate(), "weight" => 100}]
+          }
         })
 
       assert {:ok, updated} = Services.update_service(service, %{traffic_split: %{}})

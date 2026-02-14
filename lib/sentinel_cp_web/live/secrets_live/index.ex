@@ -199,7 +199,9 @@ defmodule SentinelCpWeb.SecretsLive.Index do
                 type="password"
                 name="secret[value]"
                 class="input input-bordered input-sm w-full"
-                placeholder={if @editing, do: "Leave empty to keep current value", else: "Secret value"}
+                placeholder={
+                  if @editing, do: "Leave empty to keep current value", else: "Secret value"
+                }
                 required={!@editing}
               />
             </div>
@@ -299,8 +301,8 @@ defmodule SentinelCpWeb.SecretsLive.Index do
       <.k8s_section title="Usage">
         <div class="prose prose-sm max-w-none text-sm space-y-2">
           <p>
-            Reference secrets in service configuration maps using
-            <code>{"${secrets.NAME}"}</code> syntax.
+            Reference secrets in service configuration maps using <code>{"${secrets.NAME}"}</code>
+            syntax.
           </p>
           <p>
             Secrets are resolved at bundle compile time. They are never stored in plaintext in bundles.
@@ -315,7 +317,9 @@ defmodule SentinelCpWeb.SecretsLive.Index do
   defp resolve_org(_), do: nil
 
   defp new_form do
-    to_form(%{"name" => "", "value" => "", "description" => "", "environment" => ""}, as: "secret")
+    to_form(%{"name" => "", "value" => "", "description" => "", "environment" => ""},
+      as: "secret"
+    )
   end
 
   defp empty_to_nil(nil), do: nil

@@ -104,7 +104,11 @@ defmodule SentinelCp.Services.OpenApiParser do
   @doc """
   Compares two parsed specs and returns added, removed, and unchanged paths.
   """
-  @spec diff_specs(map(), map()) :: %{added: [String.t()], removed: [String.t()], unchanged: [String.t()]}
+  @spec diff_specs(map(), map()) :: %{
+          added: [String.t()],
+          removed: [String.t()],
+          unchanged: [String.t()]
+        }
   def diff_specs(old_parsed, new_parsed) do
     old_paths = old_parsed.paths |> Map.keys() |> MapSet.new()
     new_paths = new_parsed.paths |> Map.keys() |> MapSet.new()
@@ -128,9 +132,14 @@ defmodule SentinelCp.Services.OpenApiParser do
 
   defp decode_yaml(content) do
     case YamlElixir.read_from_string(content) do
-      {:ok, map} when is_map(map) -> {:ok, map}
-      {:ok, _} -> {:error, "YAML content is not a mapping"}
-      {:error, %YamlElixir.ParsingError{} = err} -> {:error, "Invalid YAML: #{Exception.message(err)}"}
+      {:ok, map} when is_map(map) ->
+        {:ok, map}
+
+      {:ok, _} ->
+        {:error, "YAML content is not a mapping"}
+
+      {:error, %YamlElixir.ParsingError{} = err} ->
+        {:error, "Invalid YAML: #{Exception.message(err)}"}
     end
   end
 
@@ -165,7 +174,10 @@ defmodule SentinelCp.Services.OpenApiParser do
   defp split_server_url(url) do
     uri = URI.parse(url)
     base_path = (uri.path || "") |> String.trim_trailing("/")
-    upstream = "#{uri.scheme || "http"}://#{uri.host || "localhost"}#{if uri.port && uri.port not in [80, 443], do: ":#{uri.port}", else: ""}"
+
+    upstream =
+      "#{uri.scheme || "http"}://#{uri.host || "localhost"}#{if uri.port && uri.port not in [80, 443], do: ":#{uri.port}", else: ""}"
+
     {base_path, upstream}
   end
 

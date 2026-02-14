@@ -161,8 +161,22 @@ defmodule SentinelCp.SecretsTest do
       project = project_fixture()
 
       {:ok, _} = Secrets.create_secret(%{name: "GLOBAL", value: "g", project_id: project.id})
-      {:ok, _} = Secrets.create_secret(%{name: "PROD_ONLY", value: "p", environment: "production", project_id: project.id})
-      {:ok, _} = Secrets.create_secret(%{name: "DEV_ONLY", value: "d", environment: "development", project_id: project.id})
+
+      {:ok, _} =
+        Secrets.create_secret(%{
+          name: "PROD_ONLY",
+          value: "p",
+          environment: "production",
+          project_id: project.id
+        })
+
+      {:ok, _} =
+        Secrets.create_secret(%{
+          name: "DEV_ONLY",
+          value: "d",
+          environment: "development",
+          project_id: project.id
+        })
 
       prod_secrets = Secrets.list_secrets(project.id, "production")
       names = Enum.map(prod_secrets, & &1.name)
@@ -173,7 +187,9 @@ defmodule SentinelCp.SecretsTest do
 
     test "update_secret/2 re-encrypts value" do
       project = project_fixture()
-      {:ok, secret} = Secrets.create_secret(%{name: "ROTATE_ME", value: "old", project_id: project.id})
+
+      {:ok, secret} =
+        Secrets.create_secret(%{name: "ROTATE_ME", value: "old", project_id: project.id})
 
       old_encrypted = secret.encrypted_value
 
@@ -185,7 +201,9 @@ defmodule SentinelCp.SecretsTest do
 
     test "delete_secret/1 removes the secret" do
       project = project_fixture()
-      {:ok, secret} = Secrets.create_secret(%{name: "DELETE_ME", value: "val", project_id: project.id})
+
+      {:ok, secret} =
+        Secrets.create_secret(%{name: "DELETE_ME", value: "val", project_id: project.id})
 
       assert {:ok, _} = Secrets.delete_secret(secret)
       assert Secrets.get_secret(secret.id) == nil
@@ -193,7 +211,9 @@ defmodule SentinelCp.SecretsTest do
 
     test "rotate_secret/2 updates value and last_rotated_at" do
       project = project_fixture()
-      {:ok, secret} = Secrets.create_secret(%{name: "ROTATE_SECRET", value: "old", project_id: project.id})
+
+      {:ok, secret} =
+        Secrets.create_secret(%{name: "ROTATE_SECRET", value: "old", project_id: project.id})
 
       assert secret.last_rotated_at == nil
 
@@ -204,7 +224,9 @@ defmodule SentinelCp.SecretsTest do
 
     test "decrypt_value/1 returns decrypted plaintext" do
       project = project_fixture()
-      {:ok, secret} = Secrets.create_secret(%{name: "DECRYPT_ME", value: "hello-world", project_id: project.id})
+
+      {:ok, secret} =
+        Secrets.create_secret(%{name: "DECRYPT_ME", value: "hello-world", project_id: project.id})
 
       assert {:ok, "hello-world"} = Secrets.decrypt_value(secret)
     end
@@ -213,7 +235,14 @@ defmodule SentinelCp.SecretsTest do
   describe "reference resolution" do
     test "resolve_references/3 replaces simple references" do
       project = project_fixture()
-      {:ok, _} = Secrets.create_secret(%{name: "DB_HOST", value: "postgres.internal", project_id: project.id})
+
+      {:ok, _} =
+        Secrets.create_secret(%{
+          name: "DB_HOST",
+          value: "postgres.internal",
+          project_id: project.id
+        })
+
       {:ok, _} = Secrets.create_secret(%{name: "DB_PORT", value: "5432", project_id: project.id})
 
       config = %{
@@ -266,7 +295,14 @@ defmodule SentinelCp.SecretsTest do
 
     test "resolve_references/3 respects environment scoping" do
       project = project_fixture()
-      {:ok, _} = Secrets.create_secret(%{name: "API_URL", value: "https://prod.api.com", environment: "production", project_id: project.id})
+
+      {:ok, _} =
+        Secrets.create_secret(%{
+          name: "API_URL",
+          value: "https://prod.api.com",
+          environment: "production",
+          project_id: project.id
+        })
 
       config = %{"url" => "${secrets.API_URL}"}
 

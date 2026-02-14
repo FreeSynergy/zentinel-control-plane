@@ -13,10 +13,12 @@ defmodule SentinelCp.ServiceTemplateFixtures do
         name: attrs[:name] || unique_template_name(),
         description: attrs[:description] || "A test template",
         category: attrs[:category] || "api",
-        template_data: attrs[:template_data] || %{
-          "route_path" => "/api/*",
-          "upstream_url" => "http://backend:8080"
-        },
+        template_data:
+          attrs[:template_data] ||
+            %{
+              "route_path" => "/api/*",
+              "upstream_url" => "http://backend:8080"
+            },
         project_id: project.id
       })
 

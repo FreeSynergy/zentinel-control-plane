@@ -76,18 +76,36 @@ defmodule SentinelCpWeb.MiddlewaresLive.New do
         <form phx-submit="create_middleware" class="space-y-6">
           <div class="form-control">
             <label class="label"><span class="label-text font-medium">Name</span></label>
-            <input type="text" name="name" required class="input input-bordered input-sm w-full" placeholder="e.g. Standard CORS" />
+            <input
+              type="text"
+              name="name"
+              required
+              class="input input-bordered input-sm w-full"
+              placeholder="e.g. Standard CORS"
+            />
           </div>
 
           <div class="form-control">
             <label class="label"><span class="label-text font-medium">Description</span></label>
-            <textarea name="description" rows="2" class="textarea textarea-bordered textarea-sm w-full" placeholder="Optional description"></textarea>
+            <textarea
+              name="description"
+              rows="2"
+              class="textarea textarea-bordered textarea-sm w-full"
+              placeholder="Optional description"
+            ></textarea>
           </div>
 
           <div class="form-control">
             <label class="label"><span class="label-text font-medium">Type</span></label>
-            <select name="middleware_type" phx-change="select_type" phx-value-type="" class="select select-bordered select-sm w-48">
-              <option :for={t <- @middleware_types} value={t} selected={t == @selected_type}>{t}</option>
+            <select
+              name="middleware_type"
+              phx-change="select_type"
+              phx-value-type=""
+              class="select select-bordered select-sm w-48"
+            >
+              <option :for={t <- @middleware_types} value={t} selected={t == @selected_type}>
+                {t}
+              </option>
             </select>
           </div>
 
@@ -100,10 +118,17 @@ defmodule SentinelCpWeb.MiddlewaresLive.New do
 
           <div class="space-y-2 ml-4 p-3 border-l-2 border-primary/30">
             <p class="text-xs font-semibold text-base-content/70">Configuration</p>
-            <p class="text-xs text-base-content/50">Add key-value pairs for this middleware's config.</p>
+            <p class="text-xs text-base-content/50">
+              Add key-value pairs for this middleware's config.
+            </p>
             <div class="form-control">
               <label class="label"><span class="label-text text-xs">Config (JSON)</span></label>
-              <textarea name="config[_json]" rows="6" class="textarea textarea-bordered textarea-xs w-full font-mono" placeholder={"{\n  \"key\": \"value\"\n}"}></textarea>
+              <textarea
+                name="config[_json]"
+                rows="6"
+                class="textarea textarea-bordered textarea-xs w-full font-mono"
+                placeholder={"{\n  \"key\": \"value\"\n}"}
+              ></textarea>
             </div>
           </div>
 

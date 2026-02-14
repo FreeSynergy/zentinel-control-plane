@@ -167,7 +167,9 @@ defmodule SentinelCp.Services.OpenApiSpecTest do
       pets_service = Enum.find(result.services, &(&1.openapi_path == "/pets"))
       assert pets_service.auth_policy_id != nil
 
-      bearer_policy = Enum.find(Services.list_auth_policies(project.id), &(&1.name == "bearerAuth"))
+      bearer_policy =
+        Enum.find(Services.list_auth_policies(project.id), &(&1.name == "bearerAuth"))
+
       assert pets_service.auth_policy_id == bearer_policy.id
     end
 

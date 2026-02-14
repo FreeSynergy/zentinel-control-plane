@@ -70,7 +70,7 @@ defmodule SentinelCp.Services.K8sResolver.HTTP do
   defp resolve_auth(config) do
     cond do
       is_binary(config["api_url"]) and config["api_url"] != "" and
-          is_binary(config["token"]) and config["token"] != "" ->
+        is_binary(config["token"]) and config["token"] != "" ->
         {:ok, {config["api_url"], config["token"]}}
 
       in_cluster?() ->

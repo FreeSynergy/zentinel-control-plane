@@ -35,7 +35,10 @@ defmodule Mix.Tasks.Sentinel.Config.Apply do
         apply_config(slug, file, opts)
 
       _ ->
-        Mix.shell().error("Usage: mix sentinel.config.apply <project_slug> <file> [--dry-run] [--yes]")
+        Mix.shell().error(
+          "Usage: mix sentinel.config.apply <project_slug> <file> [--dry-run] [--yes]"
+        )
+
         exit({:shutdown, 1})
     end
   end
@@ -123,7 +126,9 @@ defmodule Mix.Tasks.Sentinel.Config.Apply do
     cond do
       String.ends_with?(path, [".yml", ".yaml"]) ->
         case YamlElixir.read_from_string(content) do
-          {:ok, parsed} -> parsed
+          {:ok, parsed} ->
+            parsed
+
           {:error, reason} ->
             Mix.shell().error("Failed to parse YAML: #{inspect(reason)}")
             exit({:shutdown, 1})
@@ -131,7 +136,9 @@ defmodule Mix.Tasks.Sentinel.Config.Apply do
 
       String.ends_with?(path, ".json") ->
         case Jason.decode(content) do
-          {:ok, parsed} -> parsed
+          {:ok, parsed} ->
+            parsed
+
           {:error, reason} ->
             Mix.shell().error("Failed to parse JSON: #{inspect(reason)}")
             exit({:shutdown, 1})
@@ -145,7 +152,9 @@ defmodule Mix.Tasks.Sentinel.Config.Apply do
 
           {:error, _} ->
             case Jason.decode(content) do
-              {:ok, parsed} -> parsed
+              {:ok, parsed} ->
+                parsed
+
               {:error, _} ->
                 Mix.shell().error("Unable to parse file as YAML or JSON: #{path}")
                 exit({:shutdown, 1})

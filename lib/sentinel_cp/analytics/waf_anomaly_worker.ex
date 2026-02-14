@@ -38,7 +38,9 @@ defmodule SentinelCp.Analytics.WafAnomalyWorker do
       end)
 
     if total_anomalies > 0 do
-      Logger.info("WafAnomalyWorker: detected #{total_anomalies} anomalies across #{length(project_ids)} projects")
+      Logger.info(
+        "WafAnomalyWorker: detected #{total_anomalies} anomalies across #{length(project_ids)} projects"
+      )
     end
 
     schedule_next()
@@ -80,12 +82,17 @@ defmodule SentinelCp.Analytics.WafAnomalyWorker do
 
           case Analytics.create_waf_anomaly(attrs) do
             {:ok, anomaly} ->
-              SentinelCp.Events.emit("security.waf_anomaly", %{
-                anomaly_id: anomaly.id,
-                anomaly_type: anomaly.anomaly_type,
-                severity: anomaly.severity,
-                description: anomaly.description
-              }, project_id: project_id)
+              SentinelCp.Events.emit(
+                "security.waf_anomaly",
+                %{
+                  anomaly_id: anomaly.id,
+                  anomaly_type: anomaly.anomaly_type,
+                  severity: anomaly.severity,
+                  description: anomaly.description
+                },
+                project_id: project_id
+              )
+
               true
 
             {:error, _} ->

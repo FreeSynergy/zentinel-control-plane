@@ -242,14 +242,18 @@ defmodule SentinelCp.Observability.AlertEvaluator do
   defp send_alert_notification(rule, value) do
     Logger.warning("Alert firing: #{rule.name} (#{rule.severity}) — value: #{value}")
 
-    Events.emit("security.alert_fired", %{
-      alert_rule_id: rule.id,
-      name: rule.name,
-      severity: rule.severity,
-      value: value,
-      rule_type: rule.rule_type,
-      condition: rule.condition
-    }, project_id: rule.project_id)
+    Events.emit(
+      "security.alert_fired",
+      %{
+        alert_rule_id: rule.id,
+        name: rule.name,
+        severity: rule.severity,
+        value: value,
+        rule_type: rule.rule_type,
+        condition: rule.condition
+      },
+      project_id: rule.project_id
+    )
   rescue
     _ -> :ok
   end

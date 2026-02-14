@@ -4,7 +4,10 @@ defmodule SentinelCp.Repo.Migrations.CreateWafBaselinesAndAnomalies do
   def change do
     create table(:waf_baselines, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :project_id, references(:projects, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :project_id, references(:projects, type: :binary_id, on_delete: :delete_all),
+        null: false
+
       add :service_id, references(:services, type: :binary_id, on_delete: :nilify_all)
       add :metric_type, :string, null: false
       add :period, :string, default: "hourly"
@@ -18,12 +21,15 @@ defmodule SentinelCp.Repo.Migrations.CreateWafBaselinesAndAnomalies do
     end
 
     create unique_index(:waf_baselines, [:project_id, :service_id, :metric_type, :period],
-      name: :waf_baselines_project_service_metric_period
-    )
+             name: :waf_baselines_project_service_metric_period
+           )
 
     create table(:waf_anomalies, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :project_id, references(:projects, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :project_id, references(:projects, type: :binary_id, on_delete: :delete_all),
+        null: false
+
       add :service_id, references(:services, type: :binary_id, on_delete: :nilify_all)
       add :anomaly_type, :string, null: false
       add :severity, :string, default: "medium"

@@ -144,7 +144,11 @@ defmodule SentinelCpWeb.Api.MiddlewareController do
          {:ok, sm} <- Services.attach_middleware(attrs) do
       api_key = conn.assigns.current_api_key
 
-      Audit.log_api_key_action(api_key, "service_middleware.attached", "service_middleware", sm.id,
+      Audit.log_api_key_action(
+        api_key,
+        "service_middleware.attached",
+        "service_middleware",
+        sm.id,
         project_id: project.id,
         changes: %{service_id: service.id, middleware_id: params["middleware_id"]}
       )
@@ -166,14 +170,21 @@ defmodule SentinelCpWeb.Api.MiddlewareController do
     end
   end
 
-  def update_attachment(conn, %{"project_slug" => project_slug, "id" => service_id, "middleware_id" => mw_id} = params) do
+  def update_attachment(
+        conn,
+        %{"project_slug" => project_slug, "id" => service_id, "middleware_id" => mw_id} = params
+      ) do
     with {:ok, project} <- get_project(project_slug),
          {:ok, service} <- get_service(service_id, project.id),
          sm when not is_nil(sm) <- Services.get_service_middleware_by(service.id, mw_id),
          {:ok, updated} <- Services.update_service_middleware(sm, params) do
       api_key = conn.assigns.current_api_key
 
-      Audit.log_api_key_action(api_key, "service_middleware.updated", "service_middleware", updated.id,
+      Audit.log_api_key_action(
+        api_key,
+        "service_middleware.updated",
+        "service_middleware",
+        updated.id,
         project_id: project.id
       )
 
@@ -204,7 +215,11 @@ defmodule SentinelCpWeb.Api.MiddlewareController do
          {:ok, _deleted} <- Services.detach_middleware(sm) do
       api_key = conn.assigns.current_api_key
 
-      Audit.log_api_key_action(api_key, "service_middleware.detached", "service_middleware", sm.id,
+      Audit.log_api_key_action(
+        api_key,
+        "service_middleware.detached",
+        "service_middleware",
+        sm.id,
         project_id: project.id
       )
 

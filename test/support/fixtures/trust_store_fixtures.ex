@@ -12,7 +12,8 @@ defmodule SentinelCp.TrustStoreFixtures do
       SentinelCp.Services.create_trust_store(%{
         name: attrs[:name] || unique_trust_store_name(),
         description: attrs[:description],
-        certificates_pem: attrs[:certificates_pem] || SentinelCp.CertificateFixtures.test_cert_pem(),
+        certificates_pem:
+          attrs[:certificates_pem] || SentinelCp.CertificateFixtures.test_cert_pem(),
         project_id: project.id
       })
 

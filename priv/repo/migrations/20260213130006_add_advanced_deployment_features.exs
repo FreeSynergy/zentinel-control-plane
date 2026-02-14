@@ -5,12 +5,16 @@ defmodule SentinelCp.Repo.Migrations.AddAdvancedDeploymentFeatures do
     # Promotion rules for cross-environment automation
     create table(:promotion_rules, primary_key: false) do
       add :id, :binary_id, primary_key: true
+
       add :project_id, references(:projects, type: :binary_id, on_delete: :delete_all),
         null: false
+
       add :source_env_id, references(:environments, type: :binary_id, on_delete: :delete_all),
         null: false
+
       add :target_env_id, references(:environments, type: :binary_id, on_delete: :delete_all),
         null: false
+
       add :auto_promote, :boolean, default: false
       add :delay_minutes, :integer, default: 0
       add :conditions, :map, default: %{}
@@ -25,8 +29,10 @@ defmodule SentinelCp.Repo.Migrations.AddAdvancedDeploymentFeatures do
     # Freeze windows
     create table(:freeze_windows, primary_key: false) do
       add :id, :binary_id, primary_key: true
+
       add :project_id, references(:projects, type: :binary_id, on_delete: :delete_all),
         null: false
+
       add :environment_id, references(:environments, type: :binary_id, on_delete: :nilify_all)
       add :name, :string, null: false
       add :starts_at, :utc_datetime, null: false

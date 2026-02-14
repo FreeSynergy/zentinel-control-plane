@@ -142,7 +142,9 @@ defmodule SentinelCpWeb.PortalLive.Keys do
                   {Calendar.strftime(key.inserted_at, "%Y-%m-%d")}
                 </td>
                 <td class="text-sm text-base-content/60">
-                  {if key.last_used_at, do: Calendar.strftime(key.last_used_at, "%Y-%m-%d %H:%M"), else: "Never"}
+                  {if key.last_used_at,
+                    do: Calendar.strftime(key.last_used_at, "%Y-%m-%d %H:%M"),
+                    else: "Never"}
                 </td>
                 <td>
                   <button

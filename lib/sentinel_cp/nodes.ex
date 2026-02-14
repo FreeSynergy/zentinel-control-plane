@@ -102,8 +102,9 @@ defmodule SentinelCp.Nodes do
       |> Repo.insert!()
 
       # Extract circuit breaker statuses if present
-      circuit_breakers = get_in(attrs, ["metrics", "circuit_breakers"]) ||
-                         get_in(attrs, [:metrics, :circuit_breakers]) || []
+      circuit_breakers =
+        get_in(attrs, ["metrics", "circuit_breakers"]) ||
+          get_in(attrs, [:metrics, :circuit_breakers]) || []
 
       for cb <- circuit_breakers do
         group_id = cb["upstream_group_id"] || cb[:upstream_group_id]
@@ -115,8 +116,10 @@ defmodule SentinelCp.Nodes do
             state: cb["state"] || cb[:state] || "closed",
             failure_count: cb["failure_count"] || cb[:failure_count] || 0,
             success_count: cb["success_count"] || cb[:success_count] || 0,
-            last_failure_at: parse_optional_datetime(cb["last_failure_at"] || cb[:last_failure_at]),
-            last_success_at: parse_optional_datetime(cb["last_success_at"] || cb[:last_success_at]),
+            last_failure_at:
+              parse_optional_datetime(cb["last_failure_at"] || cb[:last_failure_at]),
+            last_success_at:
+              parse_optional_datetime(cb["last_success_at"] || cb[:last_success_at]),
             last_trip_at: parse_optional_datetime(cb["last_trip_at"] || cb[:last_trip_at]),
             metadata: cb["metadata"] || cb[:metadata] || %{}
           })

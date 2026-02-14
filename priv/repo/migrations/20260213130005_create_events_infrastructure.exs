@@ -20,7 +20,10 @@ defmodule SentinelCp.Repo.Migrations.CreateEventsInfrastructure do
 
     create table(:notification_channels, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :project_id, references(:projects, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :project_id, references(:projects, type: :binary_id, on_delete: :delete_all),
+        null: false
+
       add :name, :string, null: false
       add :type, :string, null: false
       add :config, :map, null: false, default: %{}
@@ -35,11 +38,17 @@ defmodule SentinelCp.Repo.Migrations.CreateEventsInfrastructure do
 
     create table(:notification_rules, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :project_id, references(:projects, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :project_id, references(:projects, type: :binary_id, on_delete: :delete_all),
+        null: false
+
       add :name, :string, null: false
       add :event_pattern, :string, null: false
-      add :channel_id, references(:notification_channels, type: :binary_id, on_delete: :delete_all),
-        null: false
+
+      add :channel_id,
+          references(:notification_channels, type: :binary_id, on_delete: :delete_all),
+          null: false
+
       add :enabled, :boolean, default: true
       add :filter, :map, default: %{}
 
@@ -52,8 +61,11 @@ defmodule SentinelCp.Repo.Migrations.CreateEventsInfrastructure do
     create table(:delivery_attempts, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :event_id, references(:events, type: :binary_id, on_delete: :delete_all), null: false
-      add :channel_id, references(:notification_channels, type: :binary_id, on_delete: :delete_all),
-        null: false
+
+      add :channel_id,
+          references(:notification_channels, type: :binary_id, on_delete: :delete_all),
+          null: false
+
       add :status, :string, null: false, default: "pending"
       add :http_status, :integer
       add :latency_ms, :integer

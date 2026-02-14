@@ -86,7 +86,9 @@ defmodule SentinelCpWeb.TrustStoresLive.Index do
               <td class="text-sm">{ts.cert_count}</td>
               <td class="text-sm">{Enum.join(ts.subjects || [], ", ")}</td>
               <td class="text-sm">
-                {if ts.earliest_expiry, do: Calendar.strftime(ts.earliest_expiry, "%Y-%m-%d"), else: "—"}
+                {if ts.earliest_expiry,
+                  do: Calendar.strftime(ts.earliest_expiry, "%Y-%m-%d"),
+                  else: "—"}
               </td>
               <td class="flex gap-1">
                 <.link navigate={ts_show_path(@org, @project, ts)} class="btn btn-ghost btn-xs">

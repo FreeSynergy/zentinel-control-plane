@@ -251,17 +251,23 @@ defmodule SentinelCpWeb.BundlesLive.Diff do
         </thead>
         <tbody>
           <tr :for={pair <- @paired_lines}>
-            <td class={["text-right text-base-content/40 select-none w-12 px-2", pair.left && diff_row_class(pair.left.type)]}>
-              {pair.left && pair.left.number_a || ""}
+            <td class={[
+              "text-right text-base-content/40 select-none w-12 px-2",
+              pair.left && diff_row_class(pair.left.type)
+            ]}>
+              {(pair.left && pair.left.number_a) || ""}
             </td>
             <td class={["whitespace-pre", pair.left && diff_row_class(pair.left.type)]}>
-              {pair.left && pair.left.line || ""}
+              {(pair.left && pair.left.line) || ""}
             </td>
-            <td class={["text-right text-base-content/40 select-none w-12 px-2", pair.right && diff_row_class(pair.right.type)]}>
-              {pair.right && pair.right.number_b || ""}
+            <td class={[
+              "text-right text-base-content/40 select-none w-12 px-2",
+              pair.right && diff_row_class(pair.right.type)
+            ]}>
+              {(pair.right && pair.right.number_b) || ""}
             </td>
             <td class={["whitespace-pre", pair.right && diff_row_class(pair.right.type)]}>
-              {pair.right && pair.right.line || ""}
+              {(pair.right && pair.right.line) || ""}
             </td>
           </tr>
         </tbody>

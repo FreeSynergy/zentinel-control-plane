@@ -26,7 +26,9 @@ defmodule SentinelCp.Rollouts.AdvancedDeploymentsTest do
         validation_period_seconds: 600
       }
 
-      changeset = SentinelCp.Rollouts.Rollout.create_changeset(%SentinelCp.Rollouts.Rollout{}, attrs)
+      changeset =
+        SentinelCp.Rollouts.Rollout.create_changeset(%SentinelCp.Rollouts.Rollout{}, attrs)
+
       assert changeset.valid?
     end
 
@@ -44,7 +46,9 @@ defmodule SentinelCp.Rollouts.AdvancedDeploymentsTest do
         }
       }
 
-      changeset = SentinelCp.Rollouts.Rollout.create_changeset(%SentinelCp.Rollouts.Rollout{}, attrs)
+      changeset =
+        SentinelCp.Rollouts.Rollout.create_changeset(%SentinelCp.Rollouts.Rollout{}, attrs)
+
       assert changeset.valid?
     end
   end

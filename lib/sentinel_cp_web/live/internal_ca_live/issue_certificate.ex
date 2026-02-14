@@ -15,7 +15,13 @@ defmodule SentinelCpWeb.InternalCaLive.IssueCertificate do
          org: org,
          project: project,
          internal_ca: ca,
-         form: to_form(%{"name" => "", "subject_cn" => "", "subject_ou" => "", "validity_days" => "365"})
+         form:
+           to_form(%{
+             "name" => "",
+             "subject_cn" => "",
+             "subject_ou" => "",
+             "validity_days" => "365"
+           })
        )}
     else
       _ -> {:ok, push_navigate(socket, to: ~p"/orgs")}

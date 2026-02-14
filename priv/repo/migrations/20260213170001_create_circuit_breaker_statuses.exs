@@ -4,7 +4,10 @@ defmodule SentinelCp.Repo.Migrations.CreateCircuitBreakerStatuses do
   def change do
     create table(:circuit_breaker_statuses, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :upstream_group_id, references(:upstream_groups, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :upstream_group_id,
+          references(:upstream_groups, type: :binary_id, on_delete: :delete_all), null: false
+
       add :node_id, references(:nodes, type: :binary_id, on_delete: :delete_all), null: false
       add :state, :string, default: "closed", null: false
       add :failure_count, :integer, default: 0

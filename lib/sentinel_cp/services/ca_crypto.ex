@@ -18,7 +18,8 @@ defmodule SentinelCp.Services.CACrypto do
   @oid_crl_number {2, 5, 29, 20}
 
   # Algorithm identifiers (OTP 28+ requires {:asn1_OPENTYPE, _} for typed params)
-  @rsa_sha256_algo {:AlgorithmIdentifier, {1, 2, 840, 113549, 1, 1, 11}, {:asn1_OPENTYPE, <<5, 0>>}}
+  @rsa_sha256_algo {:AlgorithmIdentifier, {1, 2, 840, 113_549, 1, 1, 11},
+                    {:asn1_OPENTYPE, <<5, 0>>}}
   @ec_sha384_algo {:AlgorithmIdentifier, {1, 2, 840, 10045, 4, 3, 3}, :asn1_NOVALUE}
   @ec_sha256_algo {:AlgorithmIdentifier, {1, 2, 840, 10045, 4, 3, 2}, :asn1_NOVALUE}
 
@@ -68,8 +69,8 @@ defmodule SentinelCp.Services.CACrypto do
     ]
 
     tbs =
-      {:TBSCertificate, :v3, serial, sig_algo, subject, validity, subject, spki,
-       :asn1_NOVALUE, :asn1_NOVALUE, extensions}
+      {:TBSCertificate, :v3, serial, sig_algo, subject, validity, subject, spki, :asn1_NOVALUE,
+       :asn1_NOVALUE, extensions}
 
     tbs_der = :public_key.der_encode(:TBSCertificate, tbs)
     signature = sign(tbs_der, private_key)
@@ -124,8 +125,8 @@ defmodule SentinelCp.Services.CACrypto do
     ]
 
     tbs =
-      {:TBSCertificate, :v3, serial, sig_algo, issuer, validity, subject, spki,
-       :asn1_NOVALUE, :asn1_NOVALUE, extensions}
+      {:TBSCertificate, :v3, serial, sig_algo, issuer, validity, subject, spki, :asn1_NOVALUE,
+       :asn1_NOVALUE, extensions}
 
     tbs_der = :public_key.der_encode(:TBSCertificate, tbs)
     signature = sign(tbs_der, ca_key)
@@ -164,16 +165,15 @@ defmodule SentinelCp.Services.CACrypto do
     crl_number = System.os_time(:second)
 
     extensions = [
-      {:Extension, @oid_crl_number, false,
-       :public_key.der_encode(:CRLNumber, crl_number)},
+      {:Extension, @oid_crl_number, false, :public_key.der_encode(:CRLNumber, crl_number)},
       {:Extension, @oid_authority_key_id, false, encode_aki(ca_key)}
     ]
 
     revoked_or_novalue = if revoked == [], do: :asn1_NOVALUE, else: revoked
 
     tbs_crl =
-      {:TBSCertList, :v2, sig_algo, issuer, {:utcTime, this_update},
-       {:utcTime, next_update}, revoked_or_novalue, extensions}
+      {:TBSCertList, :v2, sig_algo, issuer, {:utcTime, this_update}, {:utcTime, next_update},
+       revoked_or_novalue, extensions}
 
     tbs_der = :public_key.der_encode(:TBSCertList, tbs_crl)
     signature = sign(tbs_der, ca_key)
@@ -263,7 +263,7 @@ defmodule SentinelCp.Services.CACrypto do
   defp build_spki(rsa_key) when elem(rsa_key, 0) == :RSAPrivateKey do
     modulus = elem(rsa_key, 2)
     pub_exp = elem(rsa_key, 3)
-    algo = {:AlgorithmIdentifier, {1, 2, 840, 113549, 1, 1, 1}, {:asn1_OPENTYPE, <<5, 0>>}}
+    algo = {:AlgorithmIdentifier, {1, 2, 840, 113_549, 1, 1, 1}, {:asn1_OPENTYPE, <<5, 0>>}}
     pub_key_der = :public_key.der_encode(:RSAPublicKey, {:RSAPublicKey, modulus, pub_exp})
     {:SubjectPublicKeyInfo, algo, pub_key_der}
   end

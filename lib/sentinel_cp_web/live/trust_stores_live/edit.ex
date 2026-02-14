@@ -76,7 +76,9 @@ defmodule SentinelCpWeb.TrustStoresLive.Edit do
           </div>
 
           <div class="form-control">
-            <label class="label"><span class="label-text font-medium">Description (optional)</span></label>
+            <label class="label">
+              <span class="label-text font-medium">Description (optional)</span>
+            </label>
             <textarea
               name="description"
               rows="2"
@@ -85,7 +87,9 @@ defmodule SentinelCpWeb.TrustStoresLive.Edit do
           </div>
 
           <div class="form-control">
-            <label class="label"><span class="label-text font-medium">CA Certificates PEM</span></label>
+            <label class="label">
+              <span class="label-text font-medium">CA Certificates PEM</span>
+            </label>
             <textarea
               name="certificates_pem"
               required

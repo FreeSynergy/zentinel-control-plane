@@ -137,6 +137,7 @@ defmodule SentinelCp.Audit.ComplianceExport do
   end
 
   defp encode_metadata(nil), do: ""
+
   defp encode_metadata(metadata) when is_map(metadata) do
     metadata
     |> Enum.map(fn {k, v} -> "#{k}=#{inspect(v)}" end)

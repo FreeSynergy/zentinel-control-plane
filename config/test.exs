@@ -42,6 +42,11 @@ config :phoenix_live_view,
 config :phoenix,
   sort_verified_routes_query_params: true
 
+# Bundle storage (local filesystem in test)
+config :sentinel_cp, SentinelCp.Bundles.Storage,
+  backend: :local,
+  local_dir: Path.expand("../tmp/test_bundles", __DIR__)
+
 # Bundle signing disabled in test (individual tests can override)
 config :sentinel_cp, :bundle_signing, enabled: false
 

@@ -28,15 +28,20 @@ defmodule SentinelCp.Services.Acme.Renewal do
 
     with {:ok, directory} <- acme_client().get_directory(directory_url),
          {:ok, {account_key, kid, nonce}} <- ensure_account(cert, directory, email),
-         {:ok, order} <- acme_client().new_order(directory["newOrder"], kid, account_key, nonce, domains),
-         {:ok, nonce} <- process_authorizations(order.authorizations, kid, account_key, order.nonce),
-         {:ok, {cert_pem, key_pem, _nonce}} <- finalize_and_download(order, kid, account_key, nonce, domains),
-         {:ok, updated} <- Services.renew_certificate(cert, %{cert_pem: cert_pem, key_pem: key_pem}),
-         {:ok, _} <- Services.update_certificate_acme(updated, %{
-           last_renewal_at: DateTime.utc_now() |> DateTime.truncate(:second),
-           last_renewal_error: nil,
-           acme_account_key_encrypted: encrypt_account_key(account_key)
-         }) do
+         {:ok, order} <-
+           acme_client().new_order(directory["newOrder"], kid, account_key, nonce, domains),
+         {:ok, nonce} <-
+           process_authorizations(order.authorizations, kid, account_key, order.nonce),
+         {:ok, {cert_pem, key_pem, _nonce}} <-
+           finalize_and_download(order, kid, account_key, nonce, domains),
+         {:ok, updated} <-
+           Services.renew_certificate(cert, %{cert_pem: cert_pem, key_pem: key_pem}),
+         {:ok, _} <-
+           Services.update_certificate_acme(updated, %{
+             last_renewal_at: DateTime.utc_now() |> DateTime.truncate(:second),
+             last_renewal_error: nil,
+             acme_account_key_encrypted: encrypt_account_key(account_key)
+           }) do
       Logger.info("ACME renewal succeeded for #{cert.domain} (cert #{cert.id})")
       # Re-fetch to include all updated fields
       {:ok, Services.get_certificate!(cert.id)}

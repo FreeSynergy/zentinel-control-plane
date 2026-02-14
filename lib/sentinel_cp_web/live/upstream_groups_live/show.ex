@@ -11,7 +11,9 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.Show do
          group when not is_nil(group) <- Services.get_upstream_group(group_id),
          true <- group.project_id == project.id do
       discovery_source = Services.get_discovery_source_for_group(group.id)
-      trust_store = if group.trust_store_id, do: Services.get_trust_store(group.trust_store_id), else: nil
+
+      trust_store =
+        if group.trust_store_id, do: Services.get_trust_store(group.trust_store_id), else: nil
 
       cb_statuses = Services.list_circuit_breaker_statuses(group.id)
 
@@ -323,28 +325,63 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.Show do
                 <% else %>
                   <div class="form-control">
                     <label class="label"><span class="label-text text-xs">Namespace</span></label>
-                    <input type="text" name="namespace" required class="input input-bordered input-sm" value={@discovery_source.config["namespace"]} />
+                    <input
+                      type="text"
+                      name="namespace"
+                      required
+                      class="input input-bordered input-sm"
+                      value={@discovery_source.config["namespace"]}
+                    />
                   </div>
                   <div class="form-control">
                     <label class="label"><span class="label-text text-xs">Service Name</span></label>
-                    <input type="text" name="service_name" required class="input input-bordered input-sm" value={@discovery_source.config["service_name"]} />
+                    <input
+                      type="text"
+                      name="service_name"
+                      required
+                      class="input input-bordered input-sm"
+                      value={@discovery_source.config["service_name"]}
+                    />
                   </div>
                   <div class="form-control">
-                    <label class="label"><span class="label-text text-xs">API URL (optional)</span></label>
-                    <input type="text" name="api_url" class="input input-bordered input-sm" value={@discovery_source.config["api_url"]} />
+                    <label class="label">
+                      <span class="label-text text-xs">API URL (optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="api_url"
+                      class="input input-bordered input-sm"
+                      value={@discovery_source.config["api_url"]}
+                    />
                   </div>
                   <div class="form-control">
-                    <label class="label"><span class="label-text text-xs">Token (optional)</span></label>
-                    <input type="password" name="token" class="input input-bordered input-sm" placeholder="Leave blank to keep current" />
+                    <label class="label">
+                      <span class="label-text text-xs">Token (optional)</span>
+                    </label>
+                    <input
+                      type="password"
+                      name="token"
+                      class="input input-bordered input-sm"
+                      placeholder="Leave blank to keep current"
+                    />
                   </div>
                   <div class="form-control">
-                    <label class="label"><span class="label-text text-xs">Port Name (optional)</span></label>
-                    <input type="text" name="port_name" class="input input-bordered input-sm" value={@discovery_source.config["port_name"]} />
+                    <label class="label">
+                      <span class="label-text text-xs">Port Name (optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="port_name"
+                      class="input input-bordered input-sm"
+                      value={@discovery_source.config["port_name"]}
+                    />
                   </div>
                 <% end %>
                 <div class="flex gap-2">
                   <div class="form-control">
-                    <label class="label"><span class="label-text text-xs">Interval (seconds)</span></label>
+                    <label class="label">
+                      <span class="label-text text-xs">Interval (seconds)</span>
+                    </label>
                     <input
                       type="number"
                       name="sync_interval_seconds"
@@ -368,23 +405,58 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.Show do
                 </div>
                 <div class="flex gap-2">
                   <button type="submit" class="btn btn-primary btn-sm">Save</button>
-                  <button type="button" phx-click="cancel_discovery" class="btn btn-ghost btn-sm">Cancel</button>
+                  <button type="button" phx-click="cancel_discovery" class="btn btn-ghost btn-sm">
+                    Cancel
+                  </button>
                 </div>
               </form>
-
             <% @discovery_source -> %>
               <.definition_list>
                 <:item label="Type">{discovery_type_label(@discovery_source.source_type)}</:item>
-                <:item :if={@discovery_source.source_type == "dns_srv"} label="Hostname"><span class="font-mono text-sm">{@discovery_source.hostname}</span></:item>
-                <:item :if={@discovery_source.source_type == "kubernetes"} label="Namespace"><span class="font-mono text-sm">{@discovery_source.config["namespace"]}</span></:item>
-                <:item :if={@discovery_source.source_type == "kubernetes"} label="Service"><span class="font-mono text-sm">{@discovery_source.config["service_name"]}</span></:item>
-                <:item :if={@discovery_source.source_type == "kubernetes" && @discovery_source.config["port_name"]} label="Port Name"><span class="font-mono text-sm">{@discovery_source.config["port_name"]}</span></:item>
-                <:item :if={@discovery_source.source_type == "consul"} label="Consul Address"><span class="font-mono text-sm">{@discovery_source.config["consul_addr"]}</span></:item>
-                <:item :if={@discovery_source.source_type == "consul"} label="Service"><span class="font-mono text-sm">{@discovery_source.config["service_name"]}</span></:item>
-                <:item :if={@discovery_source.source_type == "consul" && @discovery_source.config["datacenter"]} label="Datacenter"><span class="font-mono text-sm">{@discovery_source.config["datacenter"]}</span></:item>
-                <:item :if={@discovery_source.source_type == "consul" && @discovery_source.config["tag"]} label="Tag"><span class="font-mono text-sm">{@discovery_source.config["tag"]}</span></:item>
+                <:item :if={@discovery_source.source_type == "dns_srv"} label="Hostname">
+                  <span class="font-mono text-sm">{@discovery_source.hostname}</span>
+                </:item>
+                <:item :if={@discovery_source.source_type == "kubernetes"} label="Namespace">
+                  <span class="font-mono text-sm">{@discovery_source.config["namespace"]}</span>
+                </:item>
+                <:item :if={@discovery_source.source_type == "kubernetes"} label="Service">
+                  <span class="font-mono text-sm">{@discovery_source.config["service_name"]}</span>
+                </:item>
+                <:item
+                  :if={
+                    @discovery_source.source_type == "kubernetes" &&
+                      @discovery_source.config["port_name"]
+                  }
+                  label="Port Name"
+                >
+                  <span class="font-mono text-sm">{@discovery_source.config["port_name"]}</span>
+                </:item>
+                <:item :if={@discovery_source.source_type == "consul"} label="Consul Address">
+                  <span class="font-mono text-sm">{@discovery_source.config["consul_addr"]}</span>
+                </:item>
+                <:item :if={@discovery_source.source_type == "consul"} label="Service">
+                  <span class="font-mono text-sm">{@discovery_source.config["service_name"]}</span>
+                </:item>
+                <:item
+                  :if={
+                    @discovery_source.source_type == "consul" &&
+                      @discovery_source.config["datacenter"]
+                  }
+                  label="Datacenter"
+                >
+                  <span class="font-mono text-sm">{@discovery_source.config["datacenter"]}</span>
+                </:item>
+                <:item
+                  :if={@discovery_source.source_type == "consul" && @discovery_source.config["tag"]}
+                  label="Tag"
+                >
+                  <span class="font-mono text-sm">{@discovery_source.config["tag"]}</span>
+                </:item>
                 <:item label="Status">
-                  <span class={["badge badge-sm", sync_status_class(@discovery_source.last_sync_status)]}>
+                  <span class={[
+                    "badge badge-sm",
+                    sync_status_class(@discovery_source.last_sync_status)
+                  ]}>
                     {sync_status_label(@discovery_source.last_sync_status)}
                   </span>
                 </:item>
@@ -398,13 +470,20 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.Show do
                       phx-click="toggle_auto_sync"
                       class="toggle toggle-xs"
                     />
-                    <span class="text-xs">{if @discovery_source.auto_sync, do: "on", else: "off"}</span>
+                    <span class="text-xs">
+                      {if @discovery_source.auto_sync, do: "on", else: "off"}
+                    </span>
                   </label>
                 </:item>
                 <:item label="Interval">{@discovery_source.sync_interval_seconds}s</:item>
               </.definition_list>
 
-              <div :if={@discovery_source.last_sync_status == "error" && @discovery_source.last_sync_error} class="mt-2 text-xs text-error">
+              <div
+                :if={
+                  @discovery_source.last_sync_status == "error" && @discovery_source.last_sync_error
+                }
+                class="mt-2 text-xs text-error"
+              >
                 Error: {@discovery_source.last_sync_error}
               </div>
 
@@ -419,7 +498,6 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.Show do
                   Remove
                 </button>
               </div>
-
             <% @show_discovery_form -> %>
               <form phx-submit="create_discovery" class="space-y-3">
                 <div class="form-control">
@@ -429,9 +507,15 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.Show do
                     class="select select-bordered select-sm"
                     phx-change="change_discovery_type"
                   >
-                    <option value="dns_srv" selected={@discovery_source_type == "dns_srv"}>DNS/SRV</option>
-                    <option value="kubernetes" selected={@discovery_source_type == "kubernetes"}>Kubernetes</option>
-                    <option value="consul" selected={@discovery_source_type == "consul"}>Consul</option>
+                    <option value="dns_srv" selected={@discovery_source_type == "dns_srv"}>
+                      DNS/SRV
+                    </option>
+                    <option value="kubernetes" selected={@discovery_source_type == "kubernetes"}>
+                      Kubernetes
+                    </option>
+                    <option value="consul" selected={@discovery_source_type == "consul"}>
+                      Consul
+                    </option>
                   </select>
                 </div>
 
@@ -449,51 +533,125 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.Show do
                     </div>
                   <% @discovery_source_type == "consul" -> %>
                     <div class="form-control">
-                      <label class="label"><span class="label-text text-xs">Consul Address</span></label>
-                      <input type="text" name="consul_addr" required class="input input-bordered input-sm" placeholder="http://consul:8500" />
+                      <label class="label">
+                        <span class="label-text text-xs">Consul Address</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="consul_addr"
+                        required
+                        class="input input-bordered input-sm"
+                        placeholder="http://consul:8500"
+                      />
                     </div>
                     <div class="form-control">
-                      <label class="label"><span class="label-text text-xs">Service Name</span></label>
-                      <input type="text" name="service_name" required class="input input-bordered input-sm" placeholder="my-service" />
+                      <label class="label">
+                        <span class="label-text text-xs">Service Name</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="service_name"
+                        required
+                        class="input input-bordered input-sm"
+                        placeholder="my-service"
+                      />
                     </div>
                     <div class="form-control">
-                      <label class="label"><span class="label-text text-xs">Token (optional)</span></label>
-                      <input type="password" name="token" class="input input-bordered input-sm" placeholder="ACL token or ${secrets.CONSUL_TOKEN}" />
+                      <label class="label">
+                        <span class="label-text text-xs">Token (optional)</span>
+                      </label>
+                      <input
+                        type="password"
+                        name="token"
+                        class="input input-bordered input-sm"
+                        placeholder="ACL token or ${secrets.CONSUL_TOKEN}"
+                      />
                     </div>
                     <div class="form-control">
-                      <label class="label"><span class="label-text text-xs">Datacenter (optional)</span></label>
-                      <input type="text" name="datacenter" class="input input-bordered input-sm" placeholder="dc1" />
+                      <label class="label">
+                        <span class="label-text text-xs">Datacenter (optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="datacenter"
+                        class="input input-bordered input-sm"
+                        placeholder="dc1"
+                      />
                     </div>
                     <div class="form-control">
-                      <label class="label"><span class="label-text text-xs">Tag (optional)</span></label>
-                      <input type="text" name="tag" class="input input-bordered input-sm" placeholder="production" />
+                      <label class="label">
+                        <span class="label-text text-xs">Tag (optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="tag"
+                        class="input input-bordered input-sm"
+                        placeholder="production"
+                      />
                     </div>
                   <% true -> %>
                     <div class="form-control">
                       <label class="label"><span class="label-text text-xs">Namespace</span></label>
-                      <input type="text" name="namespace" required class="input input-bordered input-sm" placeholder="default" />
+                      <input
+                        type="text"
+                        name="namespace"
+                        required
+                        class="input input-bordered input-sm"
+                        placeholder="default"
+                      />
                     </div>
                     <div class="form-control">
-                      <label class="label"><span class="label-text text-xs">Service Name</span></label>
-                      <input type="text" name="service_name" required class="input input-bordered input-sm" placeholder="my-service" />
+                      <label class="label">
+                        <span class="label-text text-xs">Service Name</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="service_name"
+                        required
+                        class="input input-bordered input-sm"
+                        placeholder="my-service"
+                      />
                     </div>
                     <div class="form-control">
-                      <label class="label"><span class="label-text text-xs">API URL (optional)</span></label>
-                      <input type="text" name="api_url" class="input input-bordered input-sm" placeholder="https://kubernetes.default.svc" />
+                      <label class="label">
+                        <span class="label-text text-xs">API URL (optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="api_url"
+                        class="input input-bordered input-sm"
+                        placeholder="https://kubernetes.default.svc"
+                      />
                     </div>
                     <div class="form-control">
-                      <label class="label"><span class="label-text text-xs">Token (optional)</span></label>
-                      <input type="password" name="token" class="input input-bordered input-sm" placeholder="Bearer token or ${secrets.K8S_TOKEN}" />
+                      <label class="label">
+                        <span class="label-text text-xs">Token (optional)</span>
+                      </label>
+                      <input
+                        type="password"
+                        name="token"
+                        class="input input-bordered input-sm"
+                        placeholder="Bearer token or ${secrets.K8S_TOKEN}"
+                      />
                     </div>
                     <div class="form-control">
-                      <label class="label"><span class="label-text text-xs">Port Name (optional)</span></label>
-                      <input type="text" name="port_name" class="input input-bordered input-sm" placeholder="http" />
+                      <label class="label">
+                        <span class="label-text text-xs">Port Name (optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="port_name"
+                        class="input input-bordered input-sm"
+                        placeholder="http"
+                      />
                     </div>
                 <% end %>
 
                 <div class="flex gap-2">
                   <div class="form-control">
-                    <label class="label"><span class="label-text text-xs">Interval (seconds)</span></label>
+                    <label class="label">
+                      <span class="label-text text-xs">Interval (seconds)</span>
+                    </label>
                     <input
                       type="number"
                       name="sync_interval_seconds"
@@ -517,10 +675,11 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.Show do
                 </div>
                 <div class="flex gap-2">
                   <button type="submit" class="btn btn-primary btn-sm">Create</button>
-                  <button type="button" phx-click="cancel_discovery" class="btn btn-ghost btn-sm">Cancel</button>
+                  <button type="button" phx-click="cancel_discovery" class="btn btn-ghost btn-sm">
+                    Cancel
+                  </button>
                 </div>
               </form>
-
             <% true -> %>
               <div class="text-center py-4">
                 <p class="text-base-content/50 text-sm mb-3">No discovery source configured.</p>
@@ -574,15 +733,35 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.Show do
         <form phx-submit="add_target" class="flex items-end gap-2 mt-4 pt-4 border-t border-base-300">
           <div class="form-control">
             <label class="label"><span class="label-text text-xs">Host</span></label>
-            <input type="text" name="host" required class="input input-bordered input-xs w-40" placeholder="api.internal" />
+            <input
+              type="text"
+              name="host"
+              required
+              class="input input-bordered input-xs w-40"
+              placeholder="api.internal"
+            />
           </div>
           <div class="form-control">
             <label class="label"><span class="label-text text-xs">Port</span></label>
-            <input type="number" name="port" required class="input input-bordered input-xs w-20" placeholder="8080" min="1" max="65535" />
+            <input
+              type="number"
+              name="port"
+              required
+              class="input input-bordered input-xs w-20"
+              placeholder="8080"
+              min="1"
+              max="65535"
+            />
           </div>
           <div class="form-control">
             <label class="label"><span class="label-text text-xs">Weight</span></label>
-            <input type="number" name="weight" class="input input-bordered input-xs w-20" placeholder="100" min="1" />
+            <input
+              type="number"
+              name="weight"
+              class="input input-bordered input-xs w-20"
+              placeholder="100"
+              min="1"
+            />
           </div>
           <button type="submit" class="btn btn-outline btn-xs">Add Target</button>
         </form>
@@ -604,7 +783,7 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.Show do
           </thead>
           <tbody>
             <tr :for={cb <- @cb_statuses}>
-              <td class="font-mono text-sm">{cb.node && cb.node.name || "—"}</td>
+              <td class="font-mono text-sm">{(cb.node && cb.node.name) || "—"}</td>
               <td>
                 <span class={["badge badge-xs", cb_state_class(cb.state)]}>
                   {cb.state}
@@ -678,16 +857,19 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.Show do
 
   defp parse_int(nil), do: nil
   defp parse_int(""), do: nil
+
   defp parse_int(str) when is_binary(str) do
     case Integer.parse(str) do
       {n, _} -> n
       :error -> nil
     end
   end
+
   defp parse_int(n) when is_integer(n), do: n
 
   defp format_map(nil), do: "—"
   defp format_map(map) when map == %{}, do: "—"
+
   defp format_map(map) do
     map
     |> Enum.sort_by(fn {k, _} -> k end)
@@ -716,6 +898,7 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.Show do
   defp sync_status_label(status), do: status
 
   defp format_sync_time(nil), do: "Never"
+
   defp format_sync_time(datetime) do
     diff = DateTime.diff(DateTime.utc_now(), datetime, :second)
 

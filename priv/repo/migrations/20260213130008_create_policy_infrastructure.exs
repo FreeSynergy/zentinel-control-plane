@@ -4,8 +4,10 @@ defmodule SentinelCp.Repo.Migrations.CreatePolicyInfrastructure do
   def change do
     create table(:policies, primary_key: false) do
       add :id, :binary_id, primary_key: true
+
       add :project_id, references(:projects, type: :binary_id, on_delete: :delete_all),
         null: false
+
       add :name, :string, null: false
       add :description, :text
       add :policy_type, :string, null: false
@@ -24,10 +26,11 @@ defmodule SentinelCp.Repo.Migrations.CreatePolicyInfrastructure do
 
     create table(:policy_violations, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :policy_id, references(:policies, type: :binary_id, on_delete: :delete_all),
-        null: false
+      add :policy_id, references(:policies, type: :binary_id, on_delete: :delete_all), null: false
+
       add :project_id, references(:projects, type: :binary_id, on_delete: :delete_all),
         null: false
+
       add :resource_type, :string, null: false
       add :resource_id, :binary_id
       add :action, :string, null: false

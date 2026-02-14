@@ -71,8 +71,13 @@ defmodule SentinelCpWeb.Api.TemplateController do
 
       template ->
         case Services.delete_template(template) do
-          {:ok, _} -> send_resp(conn, :no_content, "")
-          {:error, _} -> conn |> put_status(:unprocessable_entity) |> json(%{error: "Could not delete template"})
+          {:ok, _} ->
+            send_resp(conn, :no_content, "")
+
+          {:error, _} ->
+            conn
+            |> put_status(:unprocessable_entity)
+            |> json(%{error: "Could not delete template"})
         end
     end
   end

@@ -4,7 +4,10 @@ defmodule SentinelCp.Repo.Migrations.CreateWafEvents do
   def change do
     create table(:waf_events, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :project_id, references(:projects, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :project_id, references(:projects, type: :binary_id, on_delete: :delete_all),
+        null: false
+
       add :service_id, references(:services, type: :binary_id, on_delete: :nilify_all)
       add :node_id, references(:nodes, type: :binary_id, on_delete: :nilify_all)
       add :timestamp, :utc_datetime_usec, null: false

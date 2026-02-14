@@ -36,7 +36,9 @@ defmodule SentinelCpWeb.MiddlewaresLive.Index do
         )
 
         middlewares = Services.list_middlewares(project.id)
-        {:noreply, assign(socket, middlewares: middlewares) |> put_flash(:info, "Middleware deleted.")}
+
+        {:noreply,
+         assign(socket, middlewares: middlewares) |> put_flash(:info, "Middleware deleted.")}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Could not delete middleware.")}

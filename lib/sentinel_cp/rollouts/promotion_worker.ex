@@ -86,7 +86,9 @@ defmodule SentinelCp.Rollouts.PromotionWorker do
       |> Repo.exists?()
 
     unless existing do
-      Logger.info("Auto-promoting bundle #{rollout.bundle_id} from #{rule.source_env_id} to #{rule.target_env_id}")
+      Logger.info(
+        "Auto-promoting bundle #{rollout.bundle_id} from #{rule.source_env_id} to #{rule.target_env_id}"
+      )
 
       Rollouts.create_rollout(%{
         project_id: rule.project_id,

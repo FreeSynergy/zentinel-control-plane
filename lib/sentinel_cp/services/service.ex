@@ -49,6 +49,7 @@ defmodule SentinelCp.Services.Service do
     belongs_to :openapi_spec, SentinelCp.Services.OpenApiSpec
 
     has_many :service_middlewares, SentinelCp.Services.ServiceMiddleware
+    has_many :service_plugins, SentinelCp.Plugins.ServicePlugin
 
     field :openapi_path, :string
 
@@ -190,14 +191,19 @@ defmodule SentinelCp.Services.Service do
         add_error(changeset, :inference, "is required when service_type is inference")
 
       Map.get(inference, "provider") not in ~w(openai anthropic generic) ->
-        add_error(changeset, :inference, "must include a valid provider (openai, anthropic, generic)")
+        add_error(
+          changeset,
+          :inference,
+          "must include a valid provider (openai, anthropic, generic)"
+        )
 
       true ->
         changeset
     end
   end
 
-  defp validate_active_type_config(changeset, type) when type in ~w(grpc websocket graphql streaming) do
+  defp validate_active_type_config(changeset, type)
+       when type in ~w(grpc websocket graphql streaming) do
     field = Map.fetch!(@type_config_fields, type)
     value = get_field(changeset, field)
 
@@ -221,7 +227,12 @@ defmodule SentinelCp.Services.Service do
     upstream_group_id = get_field(changeset, :upstream_group_id)
 
     set_count =
-      [present?(upstream), present?(respond_status), present?(redirect_url), present?(upstream_group_id)]
+      [
+        present?(upstream),
+        present?(respond_status),
+        present?(redirect_url),
+        present?(upstream_group_id)
+      ]
       |> Enum.count(& &1)
 
     cond do

@@ -12,8 +12,12 @@ defmodule SentinelCp.Repo.Migrations.CreateDiscoverySources do
       add :last_sync_status, :string, default: "pending"
       add :last_sync_error, :text
       add :last_sync_targets_count, :integer, default: 0
-      add :upstream_group_id, references(:upstream_groups, type: :binary_id, on_delete: :delete_all), null: false
-      add :project_id, references(:projects, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :upstream_group_id,
+          references(:upstream_groups, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :project_id, references(:projects, type: :binary_id, on_delete: :delete_all),
+        null: false
 
       timestamps(type: :utc_datetime)
     end

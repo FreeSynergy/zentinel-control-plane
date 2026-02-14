@@ -29,7 +29,15 @@ defmodule SentinelCp.Services.ServiceTemplate do
 
   def create_changeset(template, attrs) do
     template
-    |> cast(attrs, [:name, :description, :category, :template_data, :version, :is_builtin, :project_id])
+    |> cast(attrs, [
+      :name,
+      :description,
+      :category,
+      :template_data,
+      :version,
+      :is_builtin,
+      :project_id
+    ])
     |> validate_required([:name, :category])
     |> validate_inclusion(:category, @categories)
     |> generate_slug()

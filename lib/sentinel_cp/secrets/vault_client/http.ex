@@ -67,7 +67,8 @@ defmodule SentinelCp.Secrets.VaultClient.HTTP do
     url = "#{config.vault_addr}/v1/sys/health"
 
     case Req.get(url, headers: []) do
-      {:ok, %Req.Response{status: status, body: body}} when status in [200, 429, 472, 473, 501, 503] ->
+      {:ok, %Req.Response{status: status, body: body}}
+      when status in [200, 429, 472, 473, 501, 503] ->
         {:ok,
          %{
            initialized: body["initialized"],

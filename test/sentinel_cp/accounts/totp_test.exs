@@ -130,7 +130,12 @@ defmodule SentinelCp.Accounts.TotpTest do
       code = NimbleTOTP.verification_code(totp.secret)
       {:ok, _} = Totp.verify_totp_enrollment(totp, code)
 
-      org = %{mfa_policy: "required", mfa_enforced_at: DateTime.utc_now(), mfa_grace_period_days: 14}
+      org = %{
+        mfa_policy: "required",
+        mfa_enforced_at: DateTime.utc_now(),
+        mfa_grace_period_days: 14
+      }
+
       assert Totp.check_mfa_requirement(user, org) == :ok
     end
 
@@ -147,7 +152,11 @@ defmodule SentinelCp.Accounts.TotpTest do
       admin = user_fixture(%{role: "admin"})
       operator = user_fixture(%{role: "operator"})
 
-      org = %{mfa_policy: "required_for_admins", mfa_enforced_at: DateTime.utc_now(), mfa_grace_period_days: 14}
+      org = %{
+        mfa_policy: "required_for_admins",
+        mfa_enforced_at: DateTime.utc_now(),
+        mfa_grace_period_days: 14
+      }
 
       assert {:required, _} = Totp.check_mfa_requirement(admin, org)
       assert :ok = Totp.check_mfa_requirement(operator, org)

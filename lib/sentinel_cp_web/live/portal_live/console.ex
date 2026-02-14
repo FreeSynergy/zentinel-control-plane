@@ -58,7 +58,11 @@ defmodule SentinelCpWeb.PortalLive.Console do
   end
 
   @impl true
-  def handle_event("update_header", %{"index" => index, "field" => field, "value" => value}, socket) do
+  def handle_event(
+        "update_header",
+        %{"index" => index, "field" => field, "value" => value},
+        socket
+      ) do
     idx = String.to_integer(index)
 
     headers =

@@ -110,7 +110,9 @@ defmodule SentinelCp.Cluster.Backup do
   end
 
   defp count_active_rollouts do
-    case Repo.query("SELECT COUNT(*) FROM rollouts WHERE state IN ('pending', 'in_progress', 'paused')") do
+    case Repo.query(
+           "SELECT COUNT(*) FROM rollouts WHERE state IN ('pending', 'in_progress', 'paused')"
+         ) do
       {:ok, %{rows: [[count]]}} -> count
       _ -> 0
     end

@@ -72,8 +72,7 @@ defmodule SentinelCp.Rollouts.CanaryAnalysis do
         where: r.node_id in ^node_ids and r.timestamp >= ^since,
         select: %{
           total_requests: count(r.id),
-          total_errors:
-            fragment("SUM(CASE WHEN ? >= 500 THEN 1 ELSE 0 END)", r.status),
+          total_errors: fragment("SUM(CASE WHEN ? >= 500 THEN 1 ELSE 0 END)", r.status),
           avg_latency_p99: avg(r.latency_ms)
         }
       )
@@ -102,7 +101,8 @@ defmodule SentinelCp.Rollouts.CanaryAnalysis do
     end
   end
 
-  defp aggregate_metrics(_, _), do: %{total_requests: 0, total_errors: 0, avg_latency_p99: 0, error_rate: 0.0}
+  defp aggregate_metrics(_, _),
+    do: %{total_requests: 0, total_errors: 0, avg_latency_p99: 0, error_rate: 0.0}
 
   defp make_decision(canary, baseline, config) do
     error_threshold = config["error_rate_threshold"]

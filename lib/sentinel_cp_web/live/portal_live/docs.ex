@@ -129,7 +129,9 @@ defmodule SentinelCpWeb.PortalLive.Docs do
                       <td class="font-mono text-sm">{param["name"]}</td>
                       <td class="text-sm">{param["in"]}</td>
                       <td>
-                        <span :if={param["required"]} class="badge badge-error badge-xs">required</span>
+                        <span :if={param["required"]} class="badge badge-error badge-xs">
+                          required
+                        </span>
                       </td>
                       <td class="text-sm text-base-content/60">{param["description"]}</td>
                     </tr>
@@ -208,7 +210,7 @@ defmodule SentinelCpWeb.PortalLive.Docs do
         parts
       end
 
-    parts ++ ["  'https://api.example.com#{path}'"]
+    (parts ++ ["  'https://api.example.com#{path}'"])
     |> Enum.join("\n")
   end
 end

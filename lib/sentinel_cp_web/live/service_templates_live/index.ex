@@ -34,7 +34,9 @@ defmodule SentinelCpWeb.ServiceTemplatesLive.Index do
       case Services.delete_template(template) do
         {:ok, _} ->
           templates = Services.list_templates(socket.assigns.project.id)
-          {:noreply, socket |> assign(templates: templates) |> put_flash(:info, "Template deleted.")}
+
+          {:noreply,
+           socket |> assign(templates: templates) |> put_flash(:info, "Template deleted.")}
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, "Could not delete template.")}
@@ -87,7 +89,11 @@ defmodule SentinelCpWeb.ServiceTemplatesLive.Index do
                   <.link navigate={template_show_path(@org, @project, t)} class="btn btn-ghost btn-xs">
                     Details
                   </.link>
-                  <.link :if={!t.is_builtin} navigate={template_edit_path(@org, @project, t)} class="btn btn-ghost btn-xs">
+                  <.link
+                    :if={!t.is_builtin}
+                    navigate={template_edit_path(@org, @project, t)}
+                    class="btn btn-ghost btn-xs"
+                  >
                     Edit
                   </.link>
                   <button

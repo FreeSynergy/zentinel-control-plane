@@ -149,7 +149,8 @@ defmodule SentinelCpWeb.OpenApiLive.Import do
          )}
       else
         {:error, {:auth_policy_error, changeset}} ->
-          {:noreply, assign(socket, error_message: "Auth policy error: #{format_errors(changeset)}")}
+          {:noreply,
+           assign(socket, error_message: "Auth policy error: #{format_errors(changeset)}")}
 
         {:error, {:service_error, changeset}} ->
           {:noreply, assign(socket, error_message: "Service error: #{format_errors(changeset)}")}
@@ -504,7 +505,10 @@ defmodule SentinelCpWeb.OpenApiLive.Import do
   defp format_bytes(bytes), do: "#{Float.round(bytes / 1_048_576, 1)} MB"
 
   defp upload_error_to_string(:too_large), do: "File is too large (max 2 MB)"
-  defp upload_error_to_string(:not_accepted), do: "Invalid file type. Accepted: .json, .yaml, .yml"
+
+  defp upload_error_to_string(:not_accepted),
+    do: "Invalid file type. Accepted: .json, .yaml, .yml"
+
   defp upload_error_to_string(:too_many_files), do: "Only one file at a time"
   defp upload_error_to_string(err), do: "Upload error: #{inspect(err)}"
 

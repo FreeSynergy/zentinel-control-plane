@@ -18,6 +18,10 @@ defmodule SentinelCp.Repo.Migrations.CreateServiceTemplates do
 
     create index(:service_templates, [:project_id])
     create unique_index(:service_templates, [:project_id, :slug], where: "project_id IS NOT NULL")
-    create unique_index(:service_templates, [:slug], where: "is_builtin = true", name: :service_templates_builtin_slug_index)
+
+    create unique_index(:service_templates, [:slug],
+             where: "is_builtin = true",
+             name: :service_templates_builtin_slug_index
+           )
   end
 end

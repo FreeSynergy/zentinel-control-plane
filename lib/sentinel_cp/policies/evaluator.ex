@@ -28,10 +28,11 @@ defmodule SentinelCp.Policies.Evaluator do
         results = Enum.map(parts, &evaluate(&1, context))
         all_pass = Enum.all?(results, &(&1 == {:ok, true}))
 
-        error = Enum.find(results, fn
-          {:error, _} -> true
-          _ -> false
-        end)
+        error =
+          Enum.find(results, fn
+            {:error, _} -> true
+            _ -> false
+          end)
 
         if error, do: error, else: {:ok, all_pass}
 
@@ -40,10 +41,11 @@ defmodule SentinelCp.Policies.Evaluator do
         results = Enum.map(parts, &evaluate(&1, context))
         any_pass = Enum.any?(results, &(&1 == {:ok, true}))
 
-        error = Enum.find(results, fn
-          {:error, _} -> true
-          _ -> false
-        end)
+        error =
+          Enum.find(results, fn
+            {:error, _} -> true
+            _ -> false
+          end)
 
         if error, do: error, else: {:ok, any_pass}
 

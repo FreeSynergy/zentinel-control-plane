@@ -71,7 +71,8 @@ defmodule SentinelCpWeb.AnalyticsLive.Service do
     )
   end
 
-  defp aggregate_metrics([]), do: %{total_requests: 0, total_errors: 0, avg_p50: nil, avg_p95: nil, avg_p99: nil}
+  defp aggregate_metrics([]),
+    do: %{total_requests: 0, total_errors: 0, avg_p50: nil, avg_p95: nil, avg_p99: nil}
 
   defp aggregate_metrics(metrics) do
     total_requests = Enum.sum(Enum.map(metrics, & &1.request_count))
@@ -91,7 +92,7 @@ defmodule SentinelCpWeb.AnalyticsLive.Service do
   end
 
   defp safe_avg([]), do: nil
-  defp safe_avg(list), do: Enum.sum(list) / length(list) |> Float.round(1)
+  defp safe_avg(list), do: (Enum.sum(list) / length(list)) |> Float.round(1)
 
   @impl true
   def render(assigns) do
@@ -128,19 +129,45 @@ defmodule SentinelCpWeb.AnalyticsLive.Service do
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <.k8s_section title="Status Code Distribution">
-          <div :if={status_total(@status_dist) == 0} class="text-base-content/50 text-sm py-8 text-center">
+          <div
+            :if={status_total(@status_dist) == 0}
+            class="text-base-content/50 text-sm py-8 text-center"
+          >
             No status code data yet.
           </div>
           <div :if={status_total(@status_dist) > 0} class="space-y-3">
-            <.status_bar label="2xx" count={@status_dist[:status_2xx] || 0} total={status_total(@status_dist)} color="success" />
-            <.status_bar label="3xx" count={@status_dist[:status_3xx] || 0} total={status_total(@status_dist)} color="info" />
-            <.status_bar label="4xx" count={@status_dist[:status_4xx] || 0} total={status_total(@status_dist)} color="warning" />
-            <.status_bar label="5xx" count={@status_dist[:status_5xx] || 0} total={status_total(@status_dist)} color="error" />
+            <.status_bar
+              label="2xx"
+              count={@status_dist[:status_2xx] || 0}
+              total={status_total(@status_dist)}
+              color="success"
+            />
+            <.status_bar
+              label="3xx"
+              count={@status_dist[:status_3xx] || 0}
+              total={status_total(@status_dist)}
+              color="info"
+            />
+            <.status_bar
+              label="4xx"
+              count={@status_dist[:status_4xx] || 0}
+              total={status_total(@status_dist)}
+              color="warning"
+            />
+            <.status_bar
+              label="5xx"
+              count={@status_dist[:status_5xx] || 0}
+              total={status_total(@status_dist)}
+              color="error"
+            />
           </div>
         </.k8s_section>
 
         <.k8s_section title="Top Consumers">
-          <div :if={top_consumers_list(@metrics) == []} class="text-base-content/50 text-sm py-8 text-center">
+          <div
+            :if={top_consumers_list(@metrics) == []}
+            class="text-base-content/50 text-sm py-8 text-center"
+          >
             No consumer data yet.
           </div>
           <table :if={top_consumers_list(@metrics) != []} class="table table-sm">
@@ -245,6 +272,7 @@ defmodule SentinelCpWeb.AnalyticsLive.Service do
 
   defp error_rate_color(%{total_requests: reqs, total_errors: errs}) when reqs > 0 do
     rate = errs / reqs * 100
+
     cond do
       rate > 5 -> "error"
       rate > 1 -> "warning"

@@ -31,7 +31,13 @@ defmodule SentinelCp.Audit.AuditCheckpoint do
       :entries_count,
       :project_id
     ])
-    |> validate_required([:sequence_number, :last_entry_hash, :digest, :signature, :entries_count])
+    |> validate_required([
+      :sequence_number,
+      :last_entry_hash,
+      :digest,
+      :signature,
+      :entries_count
+    ])
     |> validate_number(:sequence_number, greater_than: 0)
     |> validate_number(:entries_count, greater_than_or_equal_to: 0)
   end

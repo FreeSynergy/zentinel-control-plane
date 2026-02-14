@@ -4,8 +4,13 @@ defmodule SentinelCp.Repo.Migrations.CreateAnalyticsTables do
   def change do
     create table(:service_metrics, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :service_id, references(:services, type: :binary_id, on_delete: :delete_all), null: false
-      add :project_id, references(:projects, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :service_id, references(:services, type: :binary_id, on_delete: :delete_all),
+        null: false
+
+      add :project_id, references(:projects, type: :binary_id, on_delete: :delete_all),
+        null: false
+
       add :period_start, :utc_datetime, null: false
       add :period_seconds, :integer, default: 60, null: false
       add :request_count, :integer, default: 0, null: false
@@ -30,8 +35,13 @@ defmodule SentinelCp.Repo.Migrations.CreateAnalyticsTables do
 
     create table(:request_logs, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :service_id, references(:services, type: :binary_id, on_delete: :delete_all), null: false
-      add :project_id, references(:projects, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :service_id, references(:services, type: :binary_id, on_delete: :delete_all),
+        null: false
+
+      add :project_id, references(:projects, type: :binary_id, on_delete: :delete_all),
+        null: false
+
       add :node_id, references(:nodes, type: :binary_id, on_delete: :nilify_all)
       add :timestamp, :utc_datetime_usec, null: false
       add :method, :string

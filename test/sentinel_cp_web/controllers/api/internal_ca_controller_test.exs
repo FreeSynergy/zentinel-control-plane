@@ -191,7 +191,11 @@ defmodule SentinelCpWeb.Api.InternalCaControllerTest do
       conn =
         get(conn, "/api/v1/projects/#{project.slug}/internal-ca/certificates/#{cert.id}/download")
 
-      assert %{"certificate_pem" => cert_pem, "private_key_pem" => key_pem, "ca_cert_pem" => ca_pem} =
+      assert %{
+               "certificate_pem" => cert_pem,
+               "private_key_pem" => key_pem,
+               "ca_cert_pem" => ca_pem
+             } =
                json_response(conn, 200)
 
       assert cert_pem =~ "-----BEGIN CERTIFICATE-----"

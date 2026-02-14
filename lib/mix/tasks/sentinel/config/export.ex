@@ -35,7 +35,10 @@ defmodule Mix.Tasks.Sentinel.Config.Export do
         export(slug, opts)
 
       _ ->
-        Mix.shell().error("Usage: mix sentinel.config.export <project_slug> [--format yaml|json] [--output file]")
+        Mix.shell().error(
+          "Usage: mix sentinel.config.export <project_slug> [--format yaml|json] [--output file]"
+        )
+
         exit({:shutdown, 1})
     end
   end

@@ -5,8 +5,10 @@ defmodule SentinelCp.Repo.Migrations.CreateObservabilityInfrastructure do
     # SLO definitions
     create table(:slos, primary_key: false) do
       add :id, :binary_id, primary_key: true
+
       add :project_id, references(:projects, type: :binary_id, on_delete: :delete_all),
         null: false
+
       add :service_id, references(:services, type: :binary_id, on_delete: :delete_all)
       add :name, :string, null: false
       add :description, :text
@@ -28,8 +30,10 @@ defmodule SentinelCp.Repo.Migrations.CreateObservabilityInfrastructure do
     # Alert rules
     create table(:alert_rules, primary_key: false) do
       add :id, :binary_id, primary_key: true
+
       add :project_id, references(:projects, type: :binary_id, on_delete: :delete_all),
         null: false
+
       add :name, :string, null: false
       add :description, :text
       add :rule_type, :string, null: false
@@ -50,8 +54,10 @@ defmodule SentinelCp.Repo.Migrations.CreateObservabilityInfrastructure do
     # Alert states (firing/resolved history)
     create table(:alert_states, primary_key: false) do
       add :id, :binary_id, primary_key: true
+
       add :alert_rule_id, references(:alert_rules, type: :binary_id, on_delete: :delete_all),
         null: false
+
       add :state, :string, null: false, default: "inactive"
       add :value, :float
       add :started_at, :utc_datetime
@@ -72,10 +78,13 @@ defmodule SentinelCp.Repo.Migrations.CreateObservabilityInfrastructure do
     # Metric rollups (hourly/daily aggregates)
     create table(:metric_rollups, primary_key: false) do
       add :id, :binary_id, primary_key: true
+
       add :service_id, references(:services, type: :binary_id, on_delete: :delete_all),
         null: false
+
       add :project_id, references(:projects, type: :binary_id, on_delete: :delete_all),
         null: false
+
       add :period, :string, null: false
       add :period_start, :utc_datetime, null: false
       add :request_count, :integer, default: 0

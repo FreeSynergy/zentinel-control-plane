@@ -32,7 +32,8 @@ defmodule SentinelCp.Services.CertificateRenewalWorkerTest do
     test "finds and attempts to renew expiring certificates", %{cert: cert} do
       # The fixture cert expires in ~365 days, but list_acme_renewal_candidates
       # looks for certs expiring within 30 days. We need to adjust the cert's not_after.
-      soon = DateTime.utc_now() |> DateTime.add(10 * 86_400, :second) |> DateTime.truncate(:second)
+      soon =
+        DateTime.utc_now() |> DateTime.add(10 * 86_400, :second) |> DateTime.truncate(:second)
 
       Ecto.Changeset.change(cert, %{not_after: soon})
       |> SentinelCp.Repo.update!()
@@ -96,7 +97,8 @@ defmodule SentinelCp.Services.CertificateRenewalWorkerTest do
 
       # Don't set acme_config (it stays as %{})
       # Make it expiring soon
-      soon = DateTime.utc_now() |> DateTime.add(10 * 86_400, :second) |> DateTime.truncate(:second)
+      soon =
+        DateTime.utc_now() |> DateTime.add(10 * 86_400, :second) |> DateTime.truncate(:second)
 
       Ecto.Changeset.change(cert, %{not_after: soon, auto_renew: true})
       |> SentinelCp.Repo.update!()

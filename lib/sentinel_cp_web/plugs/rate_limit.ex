@@ -30,11 +30,14 @@ defmodule SentinelCpWeb.Plugs.RateLimit do
         conn
         |> put_rate_limit_headers(limit, 0, reset_at)
         |> put_resp_content_type("application/json")
-        |> send_resp(429, Jason.encode!(%{
-          error: "rate_limit_exceeded",
-          message: "Rate limit exceeded. Try again after #{reset_at}.",
-          retry_after: reset_at - System.system_time(:second)
-        }))
+        |> send_resp(
+          429,
+          Jason.encode!(%{
+            error: "rate_limit_exceeded",
+            message: "Rate limit exceeded. Try again after #{reset_at}.",
+            retry_after: reset_at - System.system_time(:second)
+          })
+        )
         |> halt()
     end
   end

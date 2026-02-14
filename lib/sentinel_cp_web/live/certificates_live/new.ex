@@ -33,7 +33,8 @@ defmodule SentinelCpWeb.CertificatesLive.New do
 
     acme_config = %{
       "email" => params["email"],
-      "directory_url" => params["directory_url"] || "https://acme-v02.api.letsencrypt.org/directory"
+      "directory_url" =>
+        params["directory_url"] || "https://acme-v02.api.letsencrypt.org/directory"
     }
 
     # Create a placeholder certificate record with auto_renew enabled
@@ -85,7 +86,8 @@ defmodule SentinelCpWeb.CertificatesLive.New do
         end
 
       {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Failed to generate bootstrap cert: #{inspect(reason)}")}
+        {:noreply,
+         put_flash(socket, :error, "Failed to generate bootstrap cert: #{inspect(reason)}")}
     end
   end
 
@@ -186,7 +188,9 @@ defmodule SentinelCpWeb.CertificatesLive.New do
               placeholder="admin@example.com"
             />
             <label class="label">
-              <span class="label-text-alt text-base-content/50">Contact email for Let's Encrypt notifications</span>
+              <span class="label-text-alt text-base-content/50">
+                Contact email for Let's Encrypt notifications
+              </span>
             </label>
           </div>
 
@@ -234,7 +238,9 @@ defmodule SentinelCpWeb.CertificatesLive.New do
               placeholder="e.g. api.example.com"
             />
             <label class="label">
-              <span class="label-text-alt text-base-content/50">Primary domain for this certificate (also extracted from PEM)</span>
+              <span class="label-text-alt text-base-content/50">
+                Primary domain for this certificate (also extracted from PEM)
+              </span>
             </label>
           </div>
 
@@ -266,7 +272,9 @@ defmodule SentinelCpWeb.CertificatesLive.New do
           </div>
 
           <div class="form-control">
-            <label class="label"><span class="label-text font-medium">CA Chain PEM (optional)</span></label>
+            <label class="label">
+              <span class="label-text font-medium">CA Chain PEM (optional)</span>
+            </label>
             <textarea
               name="ca_chain_pem"
               rows="6"
@@ -319,7 +327,7 @@ defmodule SentinelCpWeb.CertificatesLive.New do
     modulus = elem(private_key, 2)
     pub_exp = elem(private_key, 3)
 
-    spki_algo = {:AlgorithmIdentifier, {1, 2, 840, 113549, 1, 1, 1}, <<5, 0>>}
+    spki_algo = {:AlgorithmIdentifier, {1, 2, 840, 113_549, 1, 1, 1}, <<5, 0>>}
     pub_key_der = :public_key.der_encode(:RSAPublicKey, {:RSAPublicKey, modulus, pub_exp})
     spki = {:SubjectPublicKeyInfo, spki_algo, pub_key_der}
 
@@ -333,11 +341,11 @@ defmodule SentinelCpWeb.CertificatesLive.New do
 
     validity = {:Validity, {:utcTime, not_before}, {:utcTime, not_after}}
     serial = :crypto.strong_rand_bytes(8) |> :binary.decode_unsigned()
-    sig_algo = {:AlgorithmIdentifier, {1, 2, 840, 113549, 1, 1, 11}, <<5, 0>>}
+    sig_algo = {:AlgorithmIdentifier, {1, 2, 840, 113_549, 1, 1, 11}, <<5, 0>>}
 
     tbs =
-      {:TBSCertificate, :v3, serial, sig_algo, subject, validity, subject, spki,
-       :asn1_NOVALUE, :asn1_NOVALUE, :asn1_NOVALUE}
+      {:TBSCertificate, :v3, serial, sig_algo, subject, validity, subject, spki, :asn1_NOVALUE,
+       :asn1_NOVALUE, :asn1_NOVALUE}
 
     tbs_der = :public_key.der_encode(:TBSCertificate, tbs)
     signature = :public_key.sign(tbs_der, :sha256, private_key)

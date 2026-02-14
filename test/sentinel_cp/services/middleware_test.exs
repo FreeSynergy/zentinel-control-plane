@@ -197,7 +197,9 @@ defmodule SentinelCp.Services.MiddlewareTest do
       project = project_fixture()
       mw = middleware_fixture(%{project: project})
       service = service_fixture(%{project: project})
-      {:ok, sm} = Services.attach_middleware(%{service_id: service.id, middleware_id: mw.id, position: 0})
+
+      {:ok, sm} =
+        Services.attach_middleware(%{service_id: service.id, middleware_id: mw.id, position: 0})
 
       {:ok, _} = Services.delete_middleware(mw)
       refute Services.get_service_middleware(sm.id)
@@ -230,10 +232,15 @@ defmodule SentinelCp.Services.MiddlewareTest do
       service = service_fixture(%{project: project})
       mw = middleware_fixture(%{project: project})
 
-      {:ok, _} = Services.attach_middleware(%{service_id: service.id, middleware_id: mw.id, position: 0})
+      {:ok, _} =
+        Services.attach_middleware(%{service_id: service.id, middleware_id: mw.id, position: 0})
 
       assert {:error, changeset} =
-               Services.attach_middleware(%{service_id: service.id, middleware_id: mw.id, position: 1})
+               Services.attach_middleware(%{
+                 service_id: service.id,
+                 middleware_id: mw.id,
+                 position: 1
+               })
 
       assert %{service_id: _} = errors_on(changeset)
     end
@@ -262,8 +269,11 @@ defmodule SentinelCp.Services.MiddlewareTest do
       mw1 = middleware_fixture(%{project: project, name: "B Second"})
       mw2 = middleware_fixture(%{project: project, name: "A First"})
 
-      {:ok, _} = Services.attach_middleware(%{service_id: service.id, middleware_id: mw1.id, position: 2})
-      {:ok, _} = Services.attach_middleware(%{service_id: service.id, middleware_id: mw2.id, position: 1})
+      {:ok, _} =
+        Services.attach_middleware(%{service_id: service.id, middleware_id: mw1.id, position: 2})
+
+      {:ok, _} =
+        Services.attach_middleware(%{service_id: service.id, middleware_id: mw2.id, position: 1})
 
       chain = Services.list_service_middlewares(service.id)
       assert length(chain) == 2
@@ -276,7 +286,8 @@ defmodule SentinelCp.Services.MiddlewareTest do
       service = service_fixture(%{project: project})
       mw = middleware_fixture(%{project: project})
 
-      {:ok, _} = Services.attach_middleware(%{service_id: service.id, middleware_id: mw.id, position: 0})
+      {:ok, _} =
+        Services.attach_middleware(%{service_id: service.id, middleware_id: mw.id, position: 0})
 
       [sm] = Services.list_service_middlewares(service.id)
       assert %Middleware{} = sm.middleware
@@ -290,7 +301,9 @@ defmodule SentinelCp.Services.MiddlewareTest do
       service = service_fixture(%{project: project})
       mw = middleware_fixture(%{project: project})
 
-      {:ok, sm} = Services.attach_middleware(%{service_id: service.id, middleware_id: mw.id, position: 0})
+      {:ok, sm} =
+        Services.attach_middleware(%{service_id: service.id, middleware_id: mw.id, position: 0})
+
       assert {:ok, _} = Services.detach_middleware(sm)
       assert Services.list_service_middlewares(service.id) == []
     end
@@ -302,7 +315,8 @@ defmodule SentinelCp.Services.MiddlewareTest do
       service = service_fixture(%{project: project})
       mw = middleware_fixture(%{project: project})
 
-      {:ok, sm} = Services.attach_middleware(%{service_id: service.id, middleware_id: mw.id, position: 0})
+      {:ok, sm} =
+        Services.attach_middleware(%{service_id: service.id, middleware_id: mw.id, position: 0})
 
       {:ok, updated} = Services.update_service_middleware(sm, %{position: 5, enabled: false})
       assert updated.position == 5
@@ -317,8 +331,11 @@ defmodule SentinelCp.Services.MiddlewareTest do
       mw1 = middleware_fixture(%{project: project, name: "First"})
       mw2 = middleware_fixture(%{project: project, name: "Second"})
 
-      {:ok, sm1} = Services.attach_middleware(%{service_id: service.id, middleware_id: mw1.id, position: 0})
-      {:ok, sm2} = Services.attach_middleware(%{service_id: service.id, middleware_id: mw2.id, position: 1})
+      {:ok, sm1} =
+        Services.attach_middleware(%{service_id: service.id, middleware_id: mw1.id, position: 0})
+
+      {:ok, sm2} =
+        Services.attach_middleware(%{service_id: service.id, middleware_id: mw2.id, position: 1})
 
       assert {:ok, :ok} =
                Services.reorder_service_middlewares(service.id, [
@@ -341,14 +358,16 @@ defmodule SentinelCp.Services.MiddlewareTest do
       config = %ProjectConfig{log_level: "info", metrics_port: 9090}
 
       # Create middleware and attach
-      mw = middleware_fixture(%{
-        project: project,
-        name: "Global Compression",
-        middleware_type: "compression",
-        config: %{"algorithm" => "gzip", "level" => 6}
-      })
+      mw =
+        middleware_fixture(%{
+          project: project,
+          name: "Global Compression",
+          middleware_type: "compression",
+          config: %{"algorithm" => "gzip", "level" => 6}
+        })
 
-      {:ok, _} = Services.attach_middleware(%{service_id: service.id, middleware_id: mw.id, position: 0})
+      {:ok, _} =
+        Services.attach_middleware(%{service_id: service.id, middleware_id: mw.id, position: 0})
 
       chain = Services.list_service_middlewares(service.id)
       middleware_chains = %{service.id => chain}
@@ -369,22 +388,27 @@ defmodule SentinelCp.Services.MiddlewareTest do
       service = service_fixture(%{project: project})
       config = %ProjectConfig{log_level: "info", metrics_port: 9090}
 
-      mw1 = middleware_fixture(%{
-        project: project,
-        name: "CORS MW",
-        middleware_type: "cors",
-        config: %{"allow_origins" => "*"}
-      })
+      mw1 =
+        middleware_fixture(%{
+          project: project,
+          name: "CORS MW",
+          middleware_type: "cors",
+          config: %{"allow_origins" => "*"}
+        })
 
-      mw2 = middleware_fixture(%{
-        project: project,
-        name: "Cache MW",
-        middleware_type: "cache",
-        config: %{"ttl" => 300}
-      })
+      mw2 =
+        middleware_fixture(%{
+          project: project,
+          name: "Cache MW",
+          middleware_type: "cache",
+          config: %{"ttl" => 300}
+        })
 
-      {:ok, _} = Services.attach_middleware(%{service_id: service.id, middleware_id: mw1.id, position: 1})
-      {:ok, _} = Services.attach_middleware(%{service_id: service.id, middleware_id: mw2.id, position: 0})
+      {:ok, _} =
+        Services.attach_middleware(%{service_id: service.id, middleware_id: mw1.id, position: 1})
+
+      {:ok, _} =
+        Services.attach_middleware(%{service_id: service.id, middleware_id: mw2.id, position: 0})
 
       chain = Services.list_service_middlewares(service.id)
       middleware_chains = %{service.id => chain}
@@ -402,14 +426,17 @@ defmodule SentinelCp.Services.MiddlewareTest do
       service = service_fixture(%{project: project})
       config = %ProjectConfig{log_level: "info", metrics_port: 9090}
 
-      mw = middleware_fixture(%{
-        project: project,
-        name: "Disabled CORS",
-        middleware_type: "cors",
-        config: %{"allow_origins" => "*"}
-      })
+      mw =
+        middleware_fixture(%{
+          project: project,
+          name: "Disabled CORS",
+          middleware_type: "cors",
+          config: %{"allow_origins" => "*"}
+        })
 
-      {:ok, sm} = Services.attach_middleware(%{service_id: service.id, middleware_id: mw.id, position: 0})
+      {:ok, sm} =
+        Services.attach_middleware(%{service_id: service.id, middleware_id: mw.id, position: 0})
+
       {:ok, _} = Services.update_service_middleware(sm, %{enabled: false})
 
       chain = Services.list_service_middlewares(service.id)
@@ -424,15 +451,17 @@ defmodule SentinelCp.Services.MiddlewareTest do
       service = service_fixture(%{project: project})
       config = %ProjectConfig{log_level: "info", metrics_port: 9090}
 
-      mw = middleware_fixture(%{
-        project: project,
-        name: "Disabled MW",
-        middleware_type: "cors",
-        config: %{"allow_origins" => "*"},
-        enabled: false
-      })
+      mw =
+        middleware_fixture(%{
+          project: project,
+          name: "Disabled MW",
+          middleware_type: "cors",
+          config: %{"allow_origins" => "*"},
+          enabled: false
+        })
 
-      {:ok, _} = Services.attach_middleware(%{service_id: service.id, middleware_id: mw.id, position: 0})
+      {:ok, _} =
+        Services.attach_middleware(%{service_id: service.id, middleware_id: mw.id, position: 0})
 
       chain = Services.list_service_middlewares(service.id)
       middleware_chains = %{service.id => chain}
@@ -446,19 +475,21 @@ defmodule SentinelCp.Services.MiddlewareTest do
       service = service_fixture(%{project: project})
       config = %ProjectConfig{log_level: "info", metrics_port: 9090}
 
-      mw = middleware_fixture(%{
-        project: project,
-        name: "Cache",
-        middleware_type: "cache",
-        config: %{"ttl" => 60, "max_size" => 1000}
-      })
+      mw =
+        middleware_fixture(%{
+          project: project,
+          name: "Cache",
+          middleware_type: "cache",
+          config: %{"ttl" => 60, "max_size" => 1000}
+        })
 
-      {:ok, _} = Services.attach_middleware(%{
-        service_id: service.id,
-        middleware_id: mw.id,
-        position: 0,
-        config_override: %{"ttl" => 300}
-      })
+      {:ok, _} =
+        Services.attach_middleware(%{
+          service_id: service.id,
+          middleware_id: mw.id,
+          position: 0,
+          config_override: %{"ttl" => 300}
+        })
 
       chain = Services.list_service_middlewares(service.id)
       middleware_chains = %{service.id => chain}
@@ -477,14 +508,16 @@ defmodule SentinelCp.Services.MiddlewareTest do
       service = service_fixture(%{project: project})
       config = %ProjectConfig{log_level: "info", metrics_port: 9090}
 
-      mw = middleware_fixture(%{
-        project: project,
-        name: "JWT Auth",
-        middleware_type: "auth",
-        config: %{"type" => "jwt", "issuer" => "https://auth.example.com"}
-      })
+      mw =
+        middleware_fixture(%{
+          project: project,
+          name: "JWT Auth",
+          middleware_type: "auth",
+          config: %{"type" => "jwt", "issuer" => "https://auth.example.com"}
+        })
 
-      {:ok, _} = Services.attach_middleware(%{service_id: service.id, middleware_id: mw.id, position: 0})
+      {:ok, _} =
+        Services.attach_middleware(%{service_id: service.id, middleware_id: mw.id, position: 0})
 
       chain = Services.list_service_middlewares(service.id)
       middleware_chains = %{service.id => chain}
@@ -501,14 +534,16 @@ defmodule SentinelCp.Services.MiddlewareTest do
       service = service_fixture(%{project: project})
       config = %ProjectConfig{log_level: "info", metrics_port: 9090}
 
-      mw = middleware_fixture(%{
-        project: project,
-        name: "Custom Plugin",
-        middleware_type: "custom",
-        config: %{"kdl_block_name" => "my_plugin", "timeout" => 30, "retries" => 3}
-      })
+      mw =
+        middleware_fixture(%{
+          project: project,
+          name: "Custom Plugin",
+          middleware_type: "custom",
+          config: %{"kdl_block_name" => "my_plugin", "timeout" => 30, "retries" => 3}
+        })
 
-      {:ok, _} = Services.attach_middleware(%{service_id: service.id, middleware_id: mw.id, position: 0})
+      {:ok, _} =
+        Services.attach_middleware(%{service_id: service.id, middleware_id: mw.id, position: 0})
 
       chain = Services.list_service_middlewares(service.id)
       middleware_chains = %{service.id => chain}

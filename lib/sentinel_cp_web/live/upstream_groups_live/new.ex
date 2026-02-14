@@ -80,12 +80,23 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.New do
         <form phx-submit="create_group" class="space-y-6">
           <div class="form-control">
             <label class="label"><span class="label-text font-medium">Name</span></label>
-            <input type="text" name="name" required class="input input-bordered input-sm w-full" placeholder="e.g. API Backends" />
+            <input
+              type="text"
+              name="name"
+              required
+              class="input input-bordered input-sm w-full"
+              placeholder="e.g. API Backends"
+            />
           </div>
 
           <div class="form-control">
             <label class="label"><span class="label-text font-medium">Description</span></label>
-            <textarea name="description" rows="2" class="textarea textarea-bordered textarea-sm w-full" placeholder="Optional description"></textarea>
+            <textarea
+              name="description"
+              rows="2"
+              class="textarea textarea-bordered textarea-sm w-full"
+              placeholder="Optional description"
+            ></textarea>
           </div>
 
           <div class="form-control">
@@ -96,13 +107,17 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.New do
           </div>
 
           <div :if={@trust_stores != []} class="form-control">
-            <label class="label"><span class="label-text font-medium">Trust Store (optional)</span></label>
+            <label class="label">
+              <span class="label-text font-medium">Trust Store (optional)</span>
+            </label>
             <select name="trust_store_id" class="select select-bordered select-sm w-full">
               <option value="">None</option>
               <option :for={ts <- @trust_stores} value={ts.id}>{ts.name}</option>
             </select>
             <label class="label">
-              <span class="label-text-alt text-base-content/50">CA bundle for verifying upstream TLS connections</span>
+              <span class="label-text-alt text-base-content/50">
+                CA bundle for verifying upstream TLS connections
+              </span>
             </label>
           </div>
 
@@ -149,7 +164,9 @@ defmodule SentinelCpWeb.UpstreamGroupsLive.New do
                 />
               </div>
               <div class="form-control">
-                <label class="label"><span class="label-text text-xs">Half-Open Max Requests</span></label>
+                <label class="label">
+                  <span class="label-text text-xs">Half-Open Max Requests</span>
+                </label>
                 <input
                   type="number"
                   name="circuit_breaker[half_open_max_requests]"

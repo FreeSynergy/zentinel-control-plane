@@ -32,7 +32,7 @@ defmodule SentinelCp.Repo.Migrations.CreateCertificates do
 
     alter table(:services) do
       add :certificate_id,
-           references(:certificates, type: :binary_id, on_delete: :nilify_all)
+          references(:certificates, type: :binary_id, on_delete: :nilify_all)
     end
   end
 end

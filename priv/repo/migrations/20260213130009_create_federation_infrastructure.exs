@@ -42,8 +42,7 @@ defmodule SentinelCp.Repo.Migrations.CreateFederationInfrastructure do
     # Bundle replication tracking
     create table(:bundle_replications, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :bundle_id, references(:bundles, type: :binary_id, on_delete: :delete_all),
-        null: false
+      add :bundle_id, references(:bundles, type: :binary_id, on_delete: :delete_all), null: false
       add :region, :string, null: false
       add :status, :string, null: false, default: "pending"
       add :replicated_at, :utc_datetime

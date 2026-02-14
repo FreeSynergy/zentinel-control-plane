@@ -140,7 +140,10 @@ defmodule SentinelCpWeb.WafLive.Anomalies do
                   Observed: {Float.round(anomaly.observed_value, 1)}
                 </span>
                 <span :if={anomaly.expected_mean}>
-                  Expected: {Float.round(anomaly.expected_mean, 1)} +/- {Float.round(anomaly.expected_stddev || 0.0, 1)}
+                  Expected: {Float.round(anomaly.expected_mean, 1)} +/- {Float.round(
+                    anomaly.expected_stddev || 0.0,
+                    1
+                  )}
                 </span>
                 <span :if={anomaly.deviation_sigma}>
                   Deviation: {anomaly.deviation_sigma} sigma
