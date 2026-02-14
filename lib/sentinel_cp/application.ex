@@ -31,16 +31,22 @@ defmodule SentinelCp.Application do
     opts = [strategy: :one_for_one, name: SentinelCp.Supervisor]
     result = Supervisor.start_link(children, opts)
 
-    # Start periodic workers
-    SentinelCp.Rollouts.SchedulerWorker.ensure_started()
-    SentinelCp.Nodes.DriftWorker.ensure_started()
-    SentinelCp.Services.CertificateExpiryWorker.ensure_started()
-    SentinelCp.Analytics.PruneWorker.ensure_started()
-    SentinelCp.Services.DiscoverySyncWorker.ensure_started()
-    SentinelCp.Services.CertificateRenewalWorker.ensure_started()
-    SentinelCp.Analytics.WafEventPruneWorker.ensure_started()
-    SentinelCp.Analytics.WafBaselineWorker.ensure_started()
-    SentinelCp.Analytics.WafAnomalyWorker.ensure_started()
+    # Start periodic workers (only if supervisor started successfully)
+    case result do
+      {:ok, _pid} ->
+        SentinelCp.Rollouts.SchedulerWorker.ensure_started()
+        SentinelCp.Nodes.DriftWorker.ensure_started()
+        SentinelCp.Services.CertificateExpiryWorker.ensure_started()
+        SentinelCp.Analytics.PruneWorker.ensure_started()
+        SentinelCp.Services.DiscoverySyncWorker.ensure_started()
+        SentinelCp.Services.CertificateRenewalWorker.ensure_started()
+        SentinelCp.Analytics.WafEventPruneWorker.ensure_started()
+        SentinelCp.Analytics.WafBaselineWorker.ensure_started()
+        SentinelCp.Analytics.WafAnomalyWorker.ensure_started()
+
+      _ ->
+        :ok
+    end
 
     result
   end
