@@ -171,8 +171,15 @@ defmodule SentinelCpWeb.Router do
     live "/projects/:project_slug/trust-stores/:id", TrustStoresLive.Show, :show
     live "/projects/:project_slug/trust-stores/:id/edit", TrustStoresLive.Edit, :edit
     live "/projects/:project_slug/internal-ca", InternalCaLive.Show, :show
-    live "/projects/:project_slug/internal-ca/certificates/new", InternalCaLive.IssueCertificate, :new
-    live "/projects/:project_slug/internal-ca/certificates/:id", InternalCaLive.CertificateShow, :show
+
+    live "/projects/:project_slug/internal-ca/certificates/new",
+         InternalCaLive.IssueCertificate,
+         :new
+
+    live "/projects/:project_slug/internal-ca/certificates/:id",
+         InternalCaLive.CertificateShow,
+         :show
+
     live "/projects/:project_slug/auth-policies", AuthPoliciesLive.Index, :index
     live "/projects/:project_slug/auth-policies/new", AuthPoliciesLive.New, :new
     live "/projects/:project_slug/auth-policies/:id", AuthPoliciesLive.Show, :show
@@ -181,10 +188,15 @@ defmodule SentinelCpWeb.Router do
     live "/projects/:project_slug/middlewares/new", MiddlewaresLive.New, :new
     live "/projects/:project_slug/middlewares/:id", MiddlewaresLive.Show, :show
     live "/projects/:project_slug/middlewares/:id/edit", MiddlewaresLive.Edit, :edit
+    live "/projects/:project_slug/plugins", PluginsLive.Index, :index
+    live "/projects/:project_slug/plugins/new", PluginsLive.New, :new
+    live "/projects/:project_slug/plugins/:id", PluginsLive.Show, :show
+    live "/projects/:project_slug/plugins/:id/edit", PluginsLive.Edit, :edit
     live "/projects/:project_slug/secrets", SecretsLive.Index, :index
     live "/projects/:project_slug/topology", TopologyLive.Index, :index
     live "/projects/:project_slug/waf", WafLive.Index, :index
     live "/projects/:project_slug/waf/anomalies", WafLive.Anomalies, :index
+    live "/projects/:project_slug/waf/:id", WafLive.Show, :show
     live "/projects/:project_slug/analytics", AnalyticsLive.Index, :index
     live "/projects/:project_slug/analytics/services/:service_id", AnalyticsLive.Service, :show
     live "/projects/:project_slug/openapi/import", OpenApiLive.Import, :import
@@ -238,9 +250,18 @@ defmodule SentinelCpWeb.Router do
     live "/orgs/:org_slug/projects/:project_slug/service-templates/:id/edit",
          ServiceTemplatesLive.Edit,
          :edit
-    live "/orgs/:org_slug/projects/:project_slug/upstream-groups", UpstreamGroupsLive.Index, :index
-    live "/orgs/:org_slug/projects/:project_slug/upstream-groups/new", UpstreamGroupsLive.New, :new
-    live "/orgs/:org_slug/projects/:project_slug/upstream-groups/:id", UpstreamGroupsLive.Show, :show
+
+    live "/orgs/:org_slug/projects/:project_slug/upstream-groups",
+         UpstreamGroupsLive.Index,
+         :index
+
+    live "/orgs/:org_slug/projects/:project_slug/upstream-groups/new",
+         UpstreamGroupsLive.New,
+         :new
+
+    live "/orgs/:org_slug/projects/:project_slug/upstream-groups/:id",
+         UpstreamGroupsLive.Show,
+         :show
 
     live "/orgs/:org_slug/projects/:project_slug/upstream-groups/:id/edit",
          UpstreamGroupsLive.Edit,
@@ -322,6 +343,22 @@ defmodule SentinelCpWeb.Router do
          MiddlewaresLive.Edit,
          :edit
 
+    live "/orgs/:org_slug/projects/:project_slug/plugins",
+         PluginsLive.Index,
+         :index
+
+    live "/orgs/:org_slug/projects/:project_slug/plugins/new",
+         PluginsLive.New,
+         :new
+
+    live "/orgs/:org_slug/projects/:project_slug/plugins/:id",
+         PluginsLive.Show,
+         :show
+
+    live "/orgs/:org_slug/projects/:project_slug/plugins/:id/edit",
+         PluginsLive.Edit,
+         :edit
+
     live "/orgs/:org_slug/projects/:project_slug/secrets",
          SecretsLive.Index,
          :index
@@ -337,6 +374,10 @@ defmodule SentinelCpWeb.Router do
     live "/orgs/:org_slug/projects/:project_slug/waf/anomalies",
          WafLive.Anomalies,
          :index
+
+    live "/orgs/:org_slug/projects/:project_slug/waf/:id",
+         WafLive.Show,
+         :show
 
     live "/orgs/:org_slug/projects/:project_slug/analytics",
          AnalyticsLive.Index,
@@ -518,6 +559,10 @@ defmodule SentinelCpWeb.Router do
       get "/middlewares/:id", MiddlewareController, :show
       get "/services/:id/middlewares", MiddlewareController, :service_index
 
+      get "/plugins", PluginController, :index
+      get "/plugins/:id", PluginController, :show
+      get "/plugins/:id/versions", PluginController, :list_versions
+
       get "/service-templates", TemplateController, :index
       get "/service-templates/:id", TemplateController, :show
 
@@ -579,6 +624,16 @@ defmodule SentinelCpWeb.Router do
       put "/services/:id/middlewares/:middleware_id", MiddlewareController, :update_attachment
       delete "/services/:id/middlewares/:middleware_id", MiddlewareController, :detach
 
+      post "/plugins", PluginController, :create
+      put "/plugins/:id", PluginController, :update
+      delete "/plugins/:id", PluginController, :delete
+      post "/plugins/:id/versions", PluginController, :upload_version
+      delete "/plugins/:id/versions/:vid", PluginController, :delete_version
+      post "/services/:id/plugins", PluginController, :attach
+      put "/services/:id/plugins/reorder", PluginController, :reorder
+      put "/services/:id/plugins/:pid", PluginController, :update_attachment
+      delete "/services/:id/plugins/:pid", PluginController, :detach
+
       post "/service-templates", TemplateController, :create
       put "/service-templates/:id", TemplateController, :update
       delete "/service-templates/:id", TemplateController, :delete
@@ -611,6 +666,13 @@ defmodule SentinelCpWeb.Router do
     get "/api-keys/:id", ApiKeyController, :show
     post "/api-keys/:id/revoke", ApiKeyController, :revoke
     delete "/api-keys/:id", ApiKeyController, :delete
+  end
+
+  # Plugin marketplace (API key auth required, read-only)
+  scope "/api/v1", SentinelCpWeb.Api do
+    pipe_through [:api, :api_auth]
+
+    get "/marketplace/plugins", PluginController, :marketplace
   end
 
   # Audit verification endpoint (API key auth required)

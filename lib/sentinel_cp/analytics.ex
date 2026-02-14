@@ -201,6 +201,11 @@ defmodule SentinelCp.Analytics do
   ## WAF Events
 
   @doc """
+  Gets a single WAF event by ID.
+  """
+  def get_waf_event(id), do: Repo.get(WafEvent, id)
+
+  @doc """
   Bulk inserts WAF event records from a node push.
   """
   def ingest_waf_events(events_list) when is_list(events_list) do
@@ -243,9 +248,7 @@ defmodule SentinelCp.Analytics do
 
     if blocked_count > 0 do
       for pid <- project_ids do
-        SentinelCp.Events.emit("security.waf_blocked", %{count: blocked_count},
-          project_id: pid
-        )
+        SentinelCp.Events.emit("security.waf_blocked", %{count: blocked_count}, project_id: pid)
       end
     end
 
@@ -364,11 +367,20 @@ defmodule SentinelCp.Analytics do
         e.rule_type
       ],
       select: %{
-        bucket: fragment("datetime((strftime('%s', ?) / ? * ?), 'unixepoch')", e.timestamp, ^bucket_seconds, ^bucket_seconds),
+        bucket:
+          fragment(
+            "datetime((strftime('%s', ?) / ? * ?), 'unixepoch')",
+            e.timestamp,
+            ^bucket_seconds,
+            ^bucket_seconds
+          ),
         rule_type: e.rule_type,
         count: count(e.id)
       },
-      order_by: [asc: fragment("(strftime('%s', ?) / ? * ?)", e.timestamp, ^bucket_seconds, ^bucket_seconds)]
+      order_by: [
+        asc:
+          fragment("(strftime('%s', ?) / ? * ?)", e.timestamp, ^bucket_seconds, ^bucket_seconds)
+      ]
     )
     |> Repo.all()
   end
@@ -553,9 +565,21 @@ defmodule SentinelCp.Analytics do
 
   defp normalize_aggregation(result) when is_map(result) do
     Map.new(result, fn
-      {k, nil} when k in [:total_requests, :total_errors, :total_bandwidth_in, :total_bandwidth_out,
-                           :total_2xx, :total_3xx, :total_4xx, :total_5xx,
-                           :status_2xx, :status_3xx, :status_4xx, :status_5xx] ->
+      {k, nil}
+      when k in [
+             :total_requests,
+             :total_errors,
+             :total_bandwidth_in,
+             :total_bandwidth_out,
+             :total_2xx,
+             :total_3xx,
+             :total_4xx,
+             :total_5xx,
+             :status_2xx,
+             :status_3xx,
+             :status_4xx,
+             :status_5xx
+           ] ->
         {k, 0}
 
       {k, %Decimal{} = v} ->

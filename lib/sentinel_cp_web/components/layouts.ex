@@ -169,6 +169,13 @@ defmodule SentinelCpWeb.Layouts do
           current={@path}
           match="/topology"
         />
+        <.sidebar_link
+          path={~p"/orgs/#{@org_slug}/projects/#{@project_slug}/waf"}
+          icon="hero-shield-check"
+          label="WAF Events"
+          current={@path}
+          match="/waf"
+        />
 
         <div class="sidebar-section-title mt-4">Settings</div>
         <.sidebar_link

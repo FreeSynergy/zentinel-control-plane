@@ -39,13 +39,13 @@
 > Make Sentinel CP capable of configuring all core proxy features through the UI.
 > Every competitor has these — they are table stakes.
 
-### 8.1 TLS / Certificate Management — DONE (ACME/CA stretch goals remain)
+### 8.1 TLS / Certificate Management — DONE
 - [x] Certificate CRUD (upload PEM/DER certs and private keys) — `certificate.ex` schema + `certificate_crypto.ex` AES-256-GCM encryption
 - [x] Certificate-to-service binding (assign certs to virtual hosts / services) — `Service.certificate_id` FK
 - [x] Certificate expiry tracking with dashboard warnings — `certificate_expiry_worker.ex` Oban worker, statuses: active/expiring_soon/expired/revoked
-- [ ] Auto-renewal integration (Let's Encrypt / ACME) — `acme_config` field exists, no ACME client
-- [ ] Internal CA for inter-node mTLS (inspired by nevisAdmin4 auto-PKI)
-- [ ] Trust store management (CA bundles for upstream verification)
+- [x] Auto-renewal integration (Let's Encrypt / ACME) — `acme/client.ex`, `acme/renewal.ex`, `acme/crypto.ex`, `certificate_renewal_worker.ex`
+- [x] Internal CA for inter-node mTLS (inspired by nevisAdmin4 auto-PKI) — `internal_ca.ex`, `internal_ca_live/`
+- [x] Trust store management (CA bundles for upstream verification) — `trust_store.ex`, `trust_stores_live/`
 - [x] KDL generation for TLS blocks — `kdl_generator.ex` `build_tls_certificates` + `build_tls_ref`
 
 ### 8.2 Upstream Groups / Load Balancing — DONE
@@ -91,11 +91,11 @@
 
 > Match enterprise expectations for proxy security and reliability features.
 
-### 9.1 Circuit Breakers — DONE (health view status is a stretch goal)
+### 9.1 Circuit Breakers — DONE
 - [x] Per-upstream circuit breaker configuration — `UpstreamGroup.circuit_breaker` map field
 - [x] Configurable thresholds (failure_threshold, success_threshold, timeout, half_open_max_requests)
 - [x] Half-open state with configurable probe interval
-- [ ] Circuit breaker status in node/service health views — no dedicated health view
+- [x] Circuit breaker status in node/service health views — `circuit_breaker_status.ex`, upstream group show page
 - [x] KDL generation for circuit breaker blocks — `build_nested_map_block` via upstream group
 
 ### 9.2 Proxy-Level Authentication — DONE
@@ -108,13 +108,13 @@
 - [x] Auth configuration UI + API — `auth_policies_live/`, `auth_policy_controller.ex`
 - [x] KDL generation for auth blocks — `build_auth_block`
 
-### 9.3 WAF / Request Security — DONE (anomaly detection / WAF dashboard are stretch goals)
+### 9.3 WAF / Request Security — DONE
 - [x] Request size limits (max body, max headers, max URI length) — `security.max_body_size`
 - [x] Content-type enforcement (whitelist allowed content types)
 - [x] Common attack pattern detection (SQLi, XSS, path traversal, RFI) — `security.block_sqli`, `security.block_xss`
 - [x] Custom WAF rules (regex-based block/allow) — via middleware system with custom type
-- [ ] Request rate anomaly detection
-- [ ] WAF event logging and dashboard
+- [x] Request rate anomaly detection — `waf_baseline.ex`, `waf_baseline_worker.ex`, `waf_anomaly.ex`, anomalies live view
+- [x] WAF event logging and dashboard — `waf_event.ex`, `waf_live/index.ex`, `waf_live/show.ex`, time-series chart
 - [x] Per-service WAF policy (enable/disable, sensitivity level) — `Service.security` map
 - [x] KDL generation for security blocks — `build_security_block`, `build_global_security`
 
@@ -178,9 +178,9 @@
 - [x] Link spec to service for documentation — `Service.openapi_spec_id` FK + `Service.openapi_path`
 - [x] Preview generated services before applying — dedicated preview endpoint
 
-### 11.2 Service Discovery Integration — DONE (DNS/SRV; Consul/K8s are stretch goals)
-- [ ] Consul service discovery (watch for backend changes, auto-update upstream groups)
-- [ ] Kubernetes service discovery (watch Services/Endpoints)
+### 11.2 Service Discovery Integration — DONE
+- [x] Consul service discovery (watch for backend changes, auto-update upstream groups) — `consul_resolver.ex`
+- [x] Kubernetes service discovery (watch Services/Endpoints) — `k8s_resolver.ex`
 - [x] DNS-based discovery (SRV records) — `discovery_source.ex`, `dns_resolver.ex`, `dns_resolver/inet.ex`
 - [x] Manual refresh + auto-sync toggle — `discovery_sync_worker.ex` background worker
 - [x] Discovery source status in UI — `last_synced_at`, `last_sync_status`, `last_sync_error`, `last_sync_targets_count`
@@ -208,31 +208,31 @@
 - [x] Customizable portal branding — `portal_title`, `portal_custom_css`, `portal_logo_url`
 - [x] Usage analytics per API consumer
 
-### 11.6 Secrets Management — DONE (Vault integration is a stretch goal)
+### 11.6 Secrets Management — DONE
 - [x] Secrets store (encrypted at rest, scoped to project or environment) — `secrets/secret.ex`, `secret_crypto.ex` AES-GCM
 - [x] Secret references in service config (e.g., `${secrets.NAME}`) — `secrets.ex` reference pattern
 - [x] Secret injection into KDL at compile time (never stored in bundles in plaintext) — `kdl_generator.ex` `maybe_resolve_secrets`
-- [ ] Vault integration (HashiCorp Vault as external secrets backend)
+- [x] Vault integration (HashiCorp Vault as external secrets backend) — `vault_client.ex`, `vault_config.ex`
 - [x] Secret rotation workflows — `secrets.ex` `rotate_secret`, `last_rotated_at` tracking
 - [x] Audit logging for secret access — audit logs on create/update/rotate
 
 ---
 
-## Remaining Stretch Goals
+## Completed Stretch Goals
 
-Items that are not yet implemented but would add value:
+All originally-identified stretch goals have been implemented:
 
-| Feature | Phase | Effort | Impact |
-|---------|-------|--------|--------|
-| ACME / Let's Encrypt auto-renewal | 8.1 | Medium | High — eliminates manual cert rotation |
-| Internal CA for mTLS | 8.1 | Large | Medium — enterprise mTLS use cases |
-| Trust store management | 8.1 | Small | Medium — upstream TLS verification |
-| Circuit breaker health view status | 9.1 | Small | Low — observability improvement |
-| WAF anomaly detection | 9.3 | Large | Medium — advanced threat detection |
-| WAF event logging dashboard | 9.3 | Medium | Medium — security visibility |
-| Consul service discovery | 11.2 | Medium | Medium — HashiCorp ecosystem |
-| Kubernetes service discovery | 11.2 | Medium | High — K8s is dominant deployment target |
-| Vault integration for secrets | 11.6 | Medium | Medium — enterprise secrets management |
+| Feature | Phase | Status |
+|---------|-------|--------|
+| ACME / Let's Encrypt auto-renewal | 8.1 | Done — `acme/client.ex`, `acme/renewal.ex`, `certificate_renewal_worker.ex` |
+| Internal CA for mTLS | 8.1 | Done — `internal_ca.ex`, `internal_ca_live/` |
+| Trust store management | 8.1 | Done — `trust_store.ex`, `trust_stores_live/` |
+| Circuit breaker health view status | 9.1 | Done — `circuit_breaker_status.ex`, upstream group show page |
+| WAF anomaly detection | 9.3 | Done — `waf_baseline.ex`, `waf_baseline_worker.ex`, `waf_anomaly.ex` |
+| WAF event logging dashboard | 9.3 | Done — `waf_event.ex`, `waf_live/index.ex`, `waf_live/show.ex` |
+| Consul service discovery | 11.2 | Done — `consul_resolver.ex` |
+| Kubernetes service discovery | 11.2 | Done — `k8s_resolver.ex` |
+| Vault integration for secrets | 11.6 | Done — `vault_client.ex`, `vault_config.ex` |
 
 ---
 

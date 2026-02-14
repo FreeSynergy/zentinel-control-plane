@@ -152,6 +152,33 @@ defmodule SentinelCp.AnalyticsTest do
     end
   end
 
+  describe "get_waf_event/1" do
+    test "returns event by ID", %{project: project} do
+      {:ok, _} =
+        Analytics.ingest_waf_events([
+          %{
+            "project_id" => project.id,
+            "timestamp" => DateTime.to_iso8601(DateTime.utc_now()),
+            "rule_type" => "sqli",
+            "action" => "blocked",
+            "severity" => "high",
+            "client_ip" => "10.0.0.1",
+            "method" => "POST",
+            "path" => "/api/login"
+          }
+        ])
+
+      [event] = Analytics.list_waf_events(project.id, time_range: 1)
+      assert fetched = Analytics.get_waf_event(event.id)
+      assert fetched.id == event.id
+      assert fetched.rule_type == "sqli"
+    end
+
+    test "returns nil for non-existent ID" do
+      assert is_nil(Analytics.get_waf_event(Ecto.UUID.generate()))
+    end
+  end
+
   describe "prune_old_logs/1" do
     test "deletes logs older than retention period", %{project: project, service: service} do
       old_time = DateTime.utc_now() |> DateTime.add(-48 * 3600, :second)

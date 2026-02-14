@@ -82,9 +82,51 @@ defmodule SentinelCpWeb.WafLive.Index do
     top_ips = Analytics.get_top_blocked_ips(project.id, filters.time_range, 5)
     top_paths = Analytics.get_top_blocked_paths(project.id, filters.time_range, 5)
 
+    bucket_minutes = bucket_size_for_range(filters.time_range)
+    time_series = Analytics.get_waf_time_series(project.id, filters.time_range, bucket_minutes)
+    chart_data = build_chart_data(time_series)
+
     socket
-    |> assign(stats: stats, top_ips: top_ips, top_paths: top_paths)
+    |> assign(
+      stats: stats,
+      top_ips: top_ips,
+      top_paths: top_paths,
+      time_series: chart_data
+    )
     |> load_events()
+  end
+
+  defp bucket_size_for_range(1), do: 5
+  defp bucket_size_for_range(6), do: 15
+  defp bucket_size_for_range(24), do: 60
+  defp bucket_size_for_range(168), do: 360
+  defp bucket_size_for_range(_), do: 60
+
+  defp build_chart_data(time_series) do
+    # Group by bucket, then build per-bucket breakdown by rule_type
+    by_bucket =
+      Enum.group_by(time_series, & &1.bucket)
+      |> Enum.sort_by(fn {bucket, _} -> bucket end)
+
+    max_total =
+      case by_bucket do
+        [] ->
+          1
+
+        buckets ->
+          buckets
+          |> Enum.map(fn {_, items} -> items |> Enum.map(& &1.count) |> Enum.sum() end)
+          |> Enum.max(fn -> 1 end)
+      end
+
+    buckets =
+      Enum.map(by_bucket, fn {bucket, items} ->
+        total = Enum.sum(Enum.map(items, & &1.count))
+        segments = Enum.map(items, fn item -> %{rule_type: item.rule_type, count: item.count} end)
+        %{bucket: bucket, total: total, segments: segments}
+      end)
+
+    %{buckets: buckets, max: max_total}
   end
 
   defp load_events(socket) do
@@ -125,10 +167,56 @@ defmodule SentinelCpWeb.WafLive.Index do
         <:stat label="Unique IPs" value={to_string(@stats.unique_ips)} color="info" />
       </.stat_strip>
 
+      <.k8s_section title="Event Timeline" testid="waf-timeline">
+        <div :if={@time_series.buckets == []} class="text-base-content/50 text-sm py-4 text-center">
+          No events in this time range.
+        </div>
+        <div
+          :if={@time_series.buckets != []}
+          class="flex items-end gap-px h-32"
+          title="WAF event timeline"
+        >
+          <div
+            :for={bucket <- @time_series.buckets}
+            class="flex-1 flex flex-col-reverse min-w-[4px]"
+            style={"height: #{bar_height(bucket.total, @time_series.max)}%"}
+            title={"#{format_bucket_label(bucket.bucket)}: #{bucket.total} events"}
+          >
+            <div
+              :for={seg <- bucket.segments}
+              class={["w-full", rule_type_color(seg.rule_type)]}
+              style={"height: #{bar_height(seg.count, bucket.total)}%"}
+            >
+            </div>
+          </div>
+        </div>
+        <div
+          :if={@time_series.buckets != []}
+          class="flex justify-between text-[10px] text-base-content/40 mt-1"
+        >
+          <span>{format_bucket_label(List.first(@time_series.buckets).bucket)}</span>
+          <span>{format_bucket_label(List.last(@time_series.buckets).bucket)}</span>
+        </div>
+        <div
+          :if={@time_series.buckets != []}
+          class="flex flex-wrap gap-3 mt-2 text-[10px] text-base-content/60"
+        >
+          <span :for={rt <- ~w(sqli xss rfi lfi rce scanner custom)} class="flex items-center gap-1">
+            <span class={["inline-block w-2 h-2 rounded-sm", rule_type_color(rt)]}></span>
+            {rt}
+          </span>
+        </div>
+      </.k8s_section>
+
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <.k8s_section title="Top Blocked IPs">
           <table :if={@top_ips != []} class="table table-sm">
-            <thead><tr><th class="text-xs">IP</th><th class="text-xs">Count</th></tr></thead>
+            <thead>
+              <tr>
+                <th class="text-xs">IP</th>
+                <th class="text-xs">Count</th>
+              </tr>
+            </thead>
             <tbody>
               <tr :for={{ip, count} <- @top_ips}>
                 <td class="font-mono text-sm">{ip}</td>
@@ -143,7 +231,12 @@ defmodule SentinelCpWeb.WafLive.Index do
 
         <.k8s_section title="Top Blocked Paths">
           <table :if={@top_paths != []} class="table table-sm">
-            <thead><tr><th class="text-xs">Path</th><th class="text-xs">Count</th></tr></thead>
+            <thead>
+              <tr>
+                <th class="text-xs">Path</th>
+                <th class="text-xs">Count</th>
+              </tr>
+            </thead>
             <tbody>
               <tr :for={{path, count} <- @top_paths}>
                 <td class="font-mono text-sm truncate max-w-xs">{path}</td>
@@ -167,17 +260,41 @@ defmodule SentinelCpWeb.WafLive.Index do
           </select>
           <select name="rule_type" class="select select-bordered select-xs">
             <option value="">All Types</option>
-            <option :for={rt <- ~w(sqli xss rfi lfi rce scanner custom)} value={rt} selected={@filters.rule_type == rt}>{rt}</option>
+            <option
+              :for={rt <- ~w(sqli xss rfi lfi rce scanner custom)}
+              value={rt}
+              selected={@filters.rule_type == rt}
+            >
+              {rt}
+            </option>
           </select>
           <select name="action" class="select select-bordered select-xs">
             <option value="">All Actions</option>
-            <option :for={a <- ~w(blocked logged challenged)} value={a} selected={@filters.action == a}>{a}</option>
+            <option
+              :for={a <- ~w(blocked logged challenged)}
+              value={a}
+              selected={@filters.action == a}
+            >
+              {a}
+            </option>
           </select>
           <select name="severity" class="select select-bordered select-xs">
             <option value="">All Severities</option>
-            <option :for={s <- ~w(critical high medium low)} value={s} selected={@filters.severity == s}>{s}</option>
+            <option
+              :for={s <- ~w(critical high medium low)}
+              value={s}
+              selected={@filters.severity == s}
+            >
+              {s}
+            </option>
           </select>
-          <input type="text" name="client_ip" value={@filters.client_ip} placeholder="Filter by IP" class="input input-bordered input-xs w-36" />
+          <input
+            type="text"
+            name="client_ip"
+            value={@filters.client_ip}
+            placeholder="Filter by IP"
+            class="input input-bordered input-xs w-36"
+          />
         </form>
 
         <table class="table table-sm">
@@ -193,7 +310,11 @@ defmodule SentinelCpWeb.WafLive.Index do
             </tr>
           </thead>
           <tbody>
-            <tr :for={event <- @events}>
+            <tr
+              :for={event <- @events}
+              class="hover:bg-base-200 cursor-pointer"
+              phx-click={JS.navigate(event_path(@org, @project, event))}
+            >
               <td class="text-xs whitespace-nowrap">{format_timestamp(event.timestamp)}</td>
               <td><span class="badge badge-xs badge-outline">{event.rule_type}</span></td>
               <td>
@@ -217,11 +338,20 @@ defmodule SentinelCpWeb.WafLive.Index do
           No WAF events found.
         </div>
 
-        <div :if={@events != []} class="flex justify-between items-center mt-4 pt-3 border-t border-base-300">
+        <div
+          :if={@events != []}
+          class="flex justify-between items-center mt-4 pt-3 border-t border-base-300"
+        >
           <button :if={@page > 1} phx-click="prev_page" class="btn btn-ghost btn-xs">Previous</button>
           <span :if={@page <= 1}></span>
           <span class="text-xs text-base-content/50">Page {@page}</span>
-          <button :if={length(@events) == @per_page} phx-click="next_page" class="btn btn-ghost btn-xs">Next</button>
+          <button
+            :if={length(@events) == @per_page}
+            phx-click="next_page"
+            class="btn btn-ghost btn-xs"
+          >
+            Next
+          </button>
         </div>
       </.k8s_section>
     </div>
@@ -236,6 +366,12 @@ defmodule SentinelCpWeb.WafLive.Index do
 
   defp anomalies_path(nil, project),
     do: ~p"/projects/#{project.slug}/waf/anomalies"
+
+  defp event_path(%{slug: org_slug}, project, event),
+    do: ~p"/orgs/#{org_slug}/projects/#{project.slug}/waf/#{event.id}"
+
+  defp event_path(nil, project, event),
+    do: ~p"/projects/#{project.slug}/waf/#{event.id}"
 
   defp blank_to_nil(nil), do: nil
   defp blank_to_nil(""), do: nil
@@ -256,4 +392,25 @@ defmodule SentinelCpWeb.WafLive.Index do
   defp format_timestamp(dt) do
     Calendar.strftime(dt, "%H:%M:%S")
   end
+
+  defp bar_height(_value, 0), do: 0
+  defp bar_height(value, max), do: round(value / max * 100)
+
+  defp format_bucket_label(nil), do: ""
+
+  defp format_bucket_label(bucket) when is_binary(bucket) do
+    case NaiveDateTime.from_iso8601(bucket) do
+      {:ok, dt} -> Calendar.strftime(dt, "%H:%M")
+      _ -> bucket
+    end
+  end
+
+  defp rule_type_color("sqli"), do: "bg-error"
+  defp rule_type_color("xss"), do: "bg-warning"
+  defp rule_type_color("rfi"), do: "bg-orange-500"
+  defp rule_type_color("lfi"), do: "bg-amber-500"
+  defp rule_type_color("rce"), do: "bg-red-800"
+  defp rule_type_color("scanner"), do: "bg-info"
+  defp rule_type_color("custom"), do: "bg-secondary"
+  defp rule_type_color(_), do: "bg-base-content/30"
 end
