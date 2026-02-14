@@ -14,6 +14,8 @@ defmodule SentinelCpWeb.GraphQL.Types.Bundle do
     end
 
     field :size_bytes, :integer
+    field :risk_level, :string
+    field :parent_bundle_id, :id
     field :inserted_at, non_null(:datetime)
   end
 

@@ -9,14 +9,14 @@ defmodule SentinelCpWeb.BundlesLive.Show do
     org = resolve_org(params)
 
     with project when not is_nil(project) <- Projects.get_project_by_slug(slug),
-         bundle when not is_nil(bundle) <- Bundles.get_bundle(bundle_id),
+         bundle when not is_nil(bundle) <- Bundles.get_bundle_with_parent(bundle_id),
          true <- bundle.project_id == project.id do
       if connected?(socket) do
         Phoenix.PubSub.subscribe(SentinelCp.PubSub, "bundles:#{project.id}")
       end
 
       assigned_nodes = get_assigned_nodes(bundle, project.id)
-      previous_bundle = get_previous_bundle(bundle, project.id)
+      previous_bundle = Bundles.get_previous_bundle(bundle, project.id)
       environments = Projects.list_environments(project.id)
       promotions = Bundles.list_bundle_promotions(bundle.id)
       sbom_components = get_sbom_components(bundle)
@@ -223,6 +223,14 @@ defmodule SentinelCpWeb.BundlesLive.Show do
               </span>
             </:item>
             <:item label="Risk Level">{@bundle.risk_level}</:item>
+            <:item :if={@bundle.parent_bundle} label="Parent Version">
+              <.link
+                navigate={bundle_show_path_for(@org, @project, @bundle.parent_bundle)}
+                class="text-primary hover:underline font-mono"
+              >
+                {@bundle.parent_bundle.version}
+              </.link>
+            </:item>
             <:item label="Created">
               {Calendar.strftime(@bundle.inserted_at, "%Y-%m-%d %H:%M:%S UTC")}
             </:item>
@@ -355,17 +363,11 @@ defmodule SentinelCpWeb.BundlesLive.Show do
     end)
   end
 
-  defp get_previous_bundle(bundle, project_id) do
-    import Ecto.Query
+  defp bundle_show_path_for(%{slug: org_slug}, project, bundle),
+    do: ~p"/orgs/#{org_slug}/projects/#{project.slug}/bundles/#{bundle.id}"
 
-    SentinelCp.Bundles.Bundle
-    |> where([b], b.project_id == ^project_id)
-    |> where([b], b.inserted_at < ^bundle.inserted_at)
-    |> where([b], b.status == "compiled")
-    |> order_by([b], desc: b.inserted_at)
-    |> limit(1)
-    |> SentinelCp.Repo.one()
-  end
+  defp bundle_show_path_for(nil, project, bundle),
+    do: ~p"/projects/#{project.slug}/bundles/#{bundle.id}"
 
   defp diff_path(%{slug: org_slug}, project, a_id, b_id),
     do: ~p"/orgs/#{org_slug}/projects/#{project.slug}/bundles/diff?a=#{a_id}&b=#{b_id}"

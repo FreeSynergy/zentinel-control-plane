@@ -7,13 +7,17 @@ defmodule SentinelCp.Bundles do
   """
 
   import Ecto.Query, warn: false
+  alias SentinelCp.Bundles.{Bundle, Diff}
   alias SentinelCp.Repo
-  alias SentinelCp.Bundles.Bundle
 
   @doc """
   Creates a bundle and enqueues compilation.
+
+  Automatically links the new bundle to the latest compiled bundle
+  for the same project as its parent.
   """
   def create_bundle(attrs) do
+    attrs = maybe_link_parent(attrs)
     changeset = Bundle.create_changeset(%Bundle{}, attrs)
 
     case Repo.insert(changeset) do
@@ -23,6 +27,19 @@ defmodule SentinelCp.Bundles do
 
       {:error, changeset} ->
         {:error, changeset}
+    end
+  end
+
+  defp maybe_link_parent(attrs) do
+    project_id = attrs[:project_id] || attrs["project_id"]
+
+    if project_id do
+      case get_latest_bundle(project_id) do
+        %Bundle{id: parent_id} -> Map.put(attrs, :parent_bundle_id, parent_id)
+        nil -> attrs
+      end
+    else
+      attrs
     end
   end
 
@@ -165,6 +182,70 @@ defmodule SentinelCp.Bundles do
 
   def delete_bundle(%Bundle{}) do
     {:error, :cannot_delete_active_bundle}
+  end
+
+  @doc """
+  Gets a bundle by ID with its parent bundle preloaded.
+  """
+  def get_bundle_with_parent(id) do
+    Bundle
+    |> Repo.get(id)
+    |> Repo.preload(:parent_bundle)
+  end
+
+  @doc """
+  Returns the chronologically previous compiled bundle for the same project.
+  """
+  def get_previous_bundle(bundle, project_id) do
+    from(b in Bundle,
+      where: b.project_id == ^project_id,
+      where: b.status == "compiled",
+      where: b.id != ^bundle.id,
+      where:
+        b.inserted_at < ^bundle.inserted_at or
+          (b.inserted_at == ^bundle.inserted_at and b.id < ^bundle.id),
+      order_by: [desc: b.inserted_at, desc: b.id],
+      limit: 1
+    )
+    |> Repo.one()
+  end
+
+  @doc """
+  Returns bundle version history for a project with diff summaries.
+
+  Lists compiled and failed bundles ordered by insertion time (newest first).
+  For each consecutive pair, precomputes diff stats and semantic summaries.
+
+  Returns `{bundles, diff_summaries}` where `diff_summaries` is a map of
+  `bundle_id => %{stats: ..., semantic: ...}`.
+  """
+  def list_bundle_history(project_id, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 100)
+
+    bundles =
+      from(b in Bundle,
+        where: b.project_id == ^project_id,
+        where: b.status in ["compiled", "failed", "superseded", "revoked"],
+        order_by: [desc: b.inserted_at, desc: b.id],
+        limit: ^limit
+      )
+      |> Repo.all()
+
+    diff_summaries = compute_diff_summaries(bundles)
+
+    {bundles, diff_summaries}
+  end
+
+  defp compute_diff_summaries(bundles) do
+    bundles
+    |> Enum.chunk_every(2, 1, :discard)
+    |> Enum.reduce(%{}, fn [newer, older], acc ->
+      config_diff = Diff.config_diff(older, newer)
+      stats = Diff.diff_stats(config_diff)
+      semantic = Diff.semantic_diff(older, newer)
+
+      Map.put(acc, newer.id, %{stats: stats, semantic: semantic})
+    end)
   end
 
   # Enqueue compilation via Oban

@@ -142,6 +142,7 @@ defmodule SentinelCpWeb.Router do
     live "/projects/:project_slug/nodes/:id", NodesLive.Show, :show
     live "/projects/:project_slug/bundles", BundlesLive.Index, :index
     live "/projects/:project_slug/bundles/new", BundlesLive.New, :new
+    live "/projects/:project_slug/bundles/history", BundlesLive.History, :history
     live "/projects/:project_slug/bundles/diff", BundlesLive.Diff, :diff
     live "/projects/:project_slug/bundles/:id", BundlesLive.Show, :show
     live "/projects/:project_slug/rollouts", RolloutsLive.Index, :index
@@ -236,6 +237,7 @@ defmodule SentinelCpWeb.Router do
     live "/orgs/:org_slug/projects/:project_slug/nodes/:id", NodesLive.Show, :show
     live "/orgs/:org_slug/projects/:project_slug/bundles", BundlesLive.Index, :index
     live "/orgs/:org_slug/projects/:project_slug/bundles/new", BundlesLive.New, :new
+    live "/orgs/:org_slug/projects/:project_slug/bundles/history", BundlesLive.History, :history
     live "/orgs/:org_slug/projects/:project_slug/bundles/diff", BundlesLive.Diff, :diff
     live "/orgs/:org_slug/projects/:project_slug/bundles/:id", BundlesLive.Show, :show
     live "/orgs/:org_slug/projects/:project_slug/rollouts", RolloutsLive.Index, :index

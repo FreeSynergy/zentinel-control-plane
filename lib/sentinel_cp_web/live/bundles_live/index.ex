@@ -132,6 +132,9 @@ defmodule SentinelCpWeb.BundlesLive.Index do
           <.link navigate={bundle_diff_path(@org, @project)} class="btn btn-outline btn-sm">
             Compare Bundles
           </.link>
+          <.link navigate={bundle_history_path(@org, @project)} class="btn btn-outline btn-sm">
+            Version History
+          </.link>
           <.link navigate={bundle_new_path(@org, @project)} class="btn btn-primary btn-sm">
             New Bundle
           </.link>
@@ -271,6 +274,12 @@ defmodule SentinelCpWeb.BundlesLive.Index do
 
   defp bundle_diff_path(nil, project),
     do: ~p"/projects/#{project.slug}/bundles/diff"
+
+  defp bundle_history_path(%{slug: org_slug}, project),
+    do: ~p"/orgs/#{org_slug}/projects/#{project.slug}/bundles/history"
+
+  defp bundle_history_path(nil, project),
+    do: ~p"/projects/#{project.slug}/bundles/history"
 
   defp format_bytes(bytes) when bytes < 1024, do: "#{bytes} B"
   defp format_bytes(bytes) when bytes < 1_048_576, do: "#{Float.round(bytes / 1024, 1)} KB"

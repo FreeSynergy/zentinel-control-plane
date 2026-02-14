@@ -206,6 +206,142 @@ defmodule SentinelCp.BundlesTest do
     end
   end
 
+  describe "version history" do
+    test "create_bundle auto-links parent_bundle_id to latest compiled bundle" do
+      project = project_fixture()
+
+      # First bundle — no parent
+      {:ok, b1} =
+        Bundles.create_bundle(%{
+          project_id: project.id,
+          version: "1.0.0",
+          config_source: @valid_kdl
+        })
+
+      assert is_nil(b1.parent_bundle_id)
+
+      # Mark b1 as compiled
+      {:ok, _} = Bundles.update_status(b1, "compiled")
+
+      # Second bundle — should auto-link to b1
+      {:ok, b2} =
+        Bundles.create_bundle(%{
+          project_id: project.id,
+          version: "2.0.0",
+          config_source: @valid_kdl
+        })
+
+      assert b2.parent_bundle_id == b1.id
+    end
+
+    test "create_bundle sets nil parent for first bundle" do
+      project = project_fixture()
+
+      {:ok, bundle} =
+        Bundles.create_bundle(%{
+          project_id: project.id,
+          version: "1.0.0",
+          config_source: @valid_kdl
+        })
+
+      assert is_nil(bundle.parent_bundle_id)
+    end
+
+    test "list_bundle_history returns bundles with diff summaries" do
+      project = project_fixture()
+
+      {:ok, b1} =
+        Bundles.create_bundle(%{
+          project_id: project.id,
+          version: "1.0.0",
+          config_source: "system { workers 2 }"
+        })
+
+      {:ok, _} = Bundles.update_status(b1, "compiled")
+
+      {:ok, b2} =
+        Bundles.create_bundle(%{
+          project_id: project.id,
+          version: "2.0.0",
+          config_source: "system { workers 4 }"
+        })
+
+      {:ok, _} = Bundles.update_status(b2, "compiled")
+
+      {bundles, diff_summaries} = Bundles.list_bundle_history(project.id)
+
+      assert length(bundles) == 2
+      versions = Enum.map(bundles, & &1.version)
+      assert "1.0.0" in versions
+      assert "2.0.0" in versions
+
+      # The newer bundle (first in list) should have a diff summary
+      newer = hd(bundles)
+      assert Map.has_key?(diff_summaries, newer.id)
+
+      summary = diff_summaries[newer.id]
+      assert is_map(summary.stats)
+      assert is_map(summary.semantic)
+    end
+
+    test "get_bundle_with_parent preloads parent" do
+      project = project_fixture()
+
+      {:ok, b1} =
+        Bundles.create_bundle(%{
+          project_id: project.id,
+          version: "1.0.0",
+          config_source: @valid_kdl
+        })
+
+      {:ok, _} = Bundles.update_status(b1, "compiled")
+
+      {:ok, b2} =
+        Bundles.create_bundle(%{
+          project_id: project.id,
+          version: "2.0.0",
+          config_source: @valid_kdl
+        })
+
+      loaded = Bundles.get_bundle_with_parent(b2.id)
+      assert loaded.parent_bundle.id == b1.id
+    end
+
+    test "get_previous_bundle returns chronologically previous compiled bundle" do
+      project = project_fixture()
+
+      {:ok, b1} =
+        Bundles.create_bundle(%{
+          project_id: project.id,
+          version: "1.0.0",
+          config_source: @valid_kdl
+        })
+
+      # Set b1 to compiled with an earlier timestamp to ensure ordering
+      past = DateTime.utc_now() |> DateTime.add(-60, :second) |> DateTime.truncate(:second)
+
+      b1
+      |> Ecto.Changeset.change(%{status: "compiled", inserted_at: past})
+      |> SentinelCp.Repo.update!()
+
+      {:ok, b2} =
+        Bundles.create_bundle(%{
+          project_id: project.id,
+          version: "2.0.0",
+          config_source: @valid_kdl
+        })
+
+      {:ok, b2} = Bundles.update_status(b2, "compiled")
+
+      previous = Bundles.get_previous_bundle(b2, project.id)
+      assert previous.id == b1.id
+
+      # First bundle should have no previous
+      b1 = SentinelCp.Repo.get!(SentinelCp.Bundles.Bundle, b1.id)
+      assert is_nil(Bundles.get_previous_bundle(b1, project.id))
+    end
+  end
+
   describe "revoke_bundle/1" do
     test "revokes a compiled bundle" do
       bundle = bundle_fixture()

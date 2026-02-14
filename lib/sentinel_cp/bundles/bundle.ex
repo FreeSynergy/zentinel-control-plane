@@ -34,6 +34,7 @@ defmodule SentinelCp.Bundles.Bundle do
     field :sbom_format, :string
 
     belongs_to :project, SentinelCp.Projects.Project
+    belongs_to :parent_bundle, SentinelCp.Bundles.Bundle
 
     timestamps(type: :utc_datetime)
   end
@@ -49,7 +50,8 @@ defmodule SentinelCp.Bundles.Bundle do
       :source_type,
       :source_ref,
       :source_branch,
-      :source_repo
+      :source_repo,
+      :parent_bundle_id
     ])
     |> validate_required([:version, :config_source, :project_id])
     |> validate_length(:version, min: 1, max: 100)
@@ -58,6 +60,7 @@ defmodule SentinelCp.Bundles.Bundle do
     |> put_change(:status, "pending")
     |> unique_constraint([:project_id, :version])
     |> foreign_key_constraint(:project_id)
+    |> foreign_key_constraint(:parent_bundle_id)
   end
 
   def compilation_changeset(bundle, attrs) do
