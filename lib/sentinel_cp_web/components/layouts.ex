@@ -177,6 +177,13 @@ defmodule SentinelCpWeb.Layouts do
           match="/waf"
         />
         <.sidebar_link
+          path={~p"/orgs/#{@org_slug}/projects/#{@project_slug}/waf/policies"}
+          icon="hero-shield-exclamation"
+          label="WAF Policies"
+          current={@path}
+          match="/waf/policies"
+        />
+        <.sidebar_link
           path={~p"/orgs/#{@org_slug}/projects/#{@project_slug}/analytics"}
           icon="hero-chart-bar"
           label="Analytics"

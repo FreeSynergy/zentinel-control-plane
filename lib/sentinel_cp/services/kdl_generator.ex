@@ -17,6 +17,9 @@ defmodule SentinelCp.Services.KdlGenerator do
     InternalCa
   }
 
+  alias SentinelCp.Waf
+  alias SentinelCp.Waf.WafPolicy
+
   @doc """
   Generates KDL configuration for a project from its services and config.
 
@@ -38,6 +41,7 @@ defmodule SentinelCp.Services.KdlGenerator do
       upstream_groups = Services.list_upstream_groups(project_id)
       certificates = Services.list_certificates(project_id)
       auth_policies = Services.list_auth_policies(project_id)
+      waf_policies = Waf.list_policies(project_id)
       trust_stores = Services.list_trust_stores(project_id)
       internal_ca = Services.get_internal_ca(project_id)
 
@@ -68,7 +72,8 @@ defmodule SentinelCp.Services.KdlGenerator do
               middleware_chains,
               trust_stores,
               internal_ca,
-              plugin_chains
+              plugin_chains,
+              waf_policies
             )
 
           {:ok, kdl}
@@ -146,7 +151,8 @@ defmodule SentinelCp.Services.KdlGenerator do
         middleware_chains \\ %{},
         trust_stores \\ [],
         internal_ca \\ nil,
-        plugin_chains \\ %{}
+        plugin_chains \\ %{},
+        waf_policies \\ []
       ) do
     # Build lookup maps
     group_map =
@@ -160,6 +166,10 @@ defmodule SentinelCp.Services.KdlGenerator do
     auth_policy_map =
       auth_policies
       |> Enum.into(%{}, fn a -> {a.id, a} end)
+
+    waf_policy_map =
+      waf_policies
+      |> Enum.into(%{}, fn w -> {w.id, w} end)
 
     trust_store_map =
       trust_stores
@@ -201,7 +211,8 @@ defmodule SentinelCp.Services.KdlGenerator do
         auth_policy_map,
         middleware_chains,
         internal_ca,
-        plugin_chains
+        plugin_chains,
+        waf_policy_map
       ),
       build_rate_limits(services)
     ]
@@ -344,14 +355,25 @@ defmodule SentinelCp.Services.KdlGenerator do
          auth_policy_map,
          middleware_chains,
          internal_ca,
-         plugin_chains
+         plugin_chains,
+         waf_policy_map
        ) do
     route_blocks =
       services
       |> Enum.map(fn service ->
         chain = Map.get(middleware_chains, service.id, [])
         plugins = Map.get(plugin_chains, service.id, [])
-        build_route(service, group_map, cert_map, auth_policy_map, chain, internal_ca, plugins)
+
+        build_route(
+          service,
+          group_map,
+          cert_map,
+          auth_policy_map,
+          chain,
+          internal_ca,
+          plugins,
+          waf_policy_map
+        )
       end)
       |> Enum.intersperse([""])
 
@@ -365,7 +387,8 @@ defmodule SentinelCp.Services.KdlGenerator do
          auth_policy_map,
          middleware_chain,
          internal_ca,
-         plugin_chain
+         plugin_chain,
+         waf_policy_map
        ) do
     lines = ["    route #{inspect(service.route_path)} {"]
 
@@ -411,7 +434,15 @@ defmodule SentinelCp.Services.KdlGenerator do
     lines = lines ++ build_path_rewrite_block(service.path_rewrite)
     lines = lines ++ build_tls_ref(service.certificate_id, cert_map)
     lines = lines ++ build_auth_block(service.auth_policy_id, auth_policy_map, internal_ca)
-    lines = lines ++ build_security_block(service.security)
+
+    lines =
+      lines ++
+        build_waf_block(
+          Map.get(service, :waf_policy_id),
+          waf_policy_map,
+          service.security
+        )
+
     lines = lines ++ build_request_transform_block(service.request_transform)
     lines = lines ++ build_response_transform_block(service.response_transform)
     lines = lines ++ build_traffic_split_block(service.traffic_split, group_map)
@@ -541,6 +572,59 @@ defmodule SentinelCp.Services.KdlGenerator do
 
   defp build_security_block(sec) do
     build_nested_map_block(sec, "security", "        ")
+  end
+
+  # WAF block: when a policy is bound, emit structured waf {} block.
+  # When no policy but legacy security map exists, fall back to build_security_block.
+  defp build_waf_block(nil, _waf_policy_map, security_map) do
+    build_security_block(security_map)
+  end
+
+  defp build_waf_block(waf_policy_id, waf_policy_map, _security_map) do
+    case Map.get(waf_policy_map, waf_policy_id) do
+      nil ->
+        []
+
+      %WafPolicy{} = policy ->
+        effective_rules = Waf.get_effective_rules(policy)
+
+        lines = ["        waf {"]
+        lines = lines ++ ["            mode #{inspect(policy.mode)}"]
+        lines = lines ++ ["            sensitivity #{inspect(policy.sensitivity)}"]
+
+        lines =
+          if policy.max_body_size,
+            do: lines ++ ["            max_body_size #{policy.max_body_size}"],
+            else: lines
+
+        lines =
+          if policy.max_header_size,
+            do: lines ++ ["            max_header_size #{policy.max_header_size}"],
+            else: lines
+
+        lines =
+          if policy.max_uri_length,
+            do: lines ++ ["            max_uri_length #{policy.max_uri_length}"],
+            else: lines
+
+        # Group effective rules by category
+        by_category =
+          effective_rules
+          |> Enum.group_by(fn {rule, _action} -> rule.category end)
+          |> Enum.sort_by(fn {cat, _} -> cat end)
+
+        category_lines =
+          Enum.flat_map(by_category, fn {category, rules_with_actions} ->
+            rule_lines =
+              Enum.map(rules_with_actions, fn {rule, action} ->
+                "                rule #{inspect(rule.rule_id)} action=#{inspect(action)}"
+              end)
+
+            ["            category #{inspect(category)} {"] ++ rule_lines ++ ["            }"]
+          end)
+
+        lines ++ category_lines ++ ["        }"]
+    end
   end
 
   defp build_request_transform_block(rt) when rt == %{} or rt == nil, do: []

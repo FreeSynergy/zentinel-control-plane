@@ -46,6 +46,7 @@ defmodule SentinelCp.Services.Service do
     belongs_to :upstream_group, SentinelCp.Services.UpstreamGroup
     belongs_to :certificate, SentinelCp.Services.Certificate
     belongs_to :auth_policy, SentinelCp.Services.AuthPolicy
+    belongs_to :waf_policy, SentinelCp.Waf.WafPolicy
     belongs_to :openapi_spec, SentinelCp.Services.OpenApiSpec
 
     has_many :service_middlewares, SentinelCp.Services.ServiceMiddleware
@@ -91,6 +92,7 @@ defmodule SentinelCp.Services.Service do
       :upstream_group_id,
       :certificate_id,
       :auth_policy_id,
+      :waf_policy_id,
       :openapi_spec_id,
       :openapi_path,
       :project_id
@@ -142,6 +144,7 @@ defmodule SentinelCp.Services.Service do
       :upstream_group_id,
       :certificate_id,
       :auth_policy_id,
+      :waf_policy_id,
       :openapi_spec_id,
       :openapi_path
     ])

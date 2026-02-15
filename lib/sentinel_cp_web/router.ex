@@ -223,6 +223,11 @@ defmodule SentinelCpWeb.Router do
     live "/projects/:project_slug/topology", TopologyLive.Index, :index
     live "/projects/:project_slug/waf", WafLive.Index, :index
     live "/projects/:project_slug/waf/anomalies", WafLive.Anomalies, :index
+    live "/projects/:project_slug/waf/rules", WafRulesLive.Index, :index
+    live "/projects/:project_slug/waf/policies", WafPoliciesLive.Index, :index
+    live "/projects/:project_slug/waf/policies/new", WafPoliciesLive.New, :new
+    live "/projects/:project_slug/waf/policies/:id", WafPoliciesLive.Show, :show
+    live "/projects/:project_slug/waf/policies/:id/edit", WafPoliciesLive.Edit, :edit
     live "/projects/:project_slug/waf/:id", WafLive.Show, :show
     live "/projects/:project_slug/analytics", AnalyticsLive.Index, :index
     live "/projects/:project_slug/analytics/services/:service_id", AnalyticsLive.Service, :show
@@ -446,6 +451,26 @@ defmodule SentinelCpWeb.Router do
     live "/orgs/:org_slug/projects/:project_slug/waf/anomalies",
          WafLive.Anomalies,
          :index
+
+    live "/orgs/:org_slug/projects/:project_slug/waf/rules",
+         WafRulesLive.Index,
+         :index
+
+    live "/orgs/:org_slug/projects/:project_slug/waf/policies",
+         WafPoliciesLive.Index,
+         :index
+
+    live "/orgs/:org_slug/projects/:project_slug/waf/policies/new",
+         WafPoliciesLive.New,
+         :new
+
+    live "/orgs/:org_slug/projects/:project_slug/waf/policies/:id",
+         WafPoliciesLive.Show,
+         :show
+
+    live "/orgs/:org_slug/projects/:project_slug/waf/policies/:id/edit",
+         WafPoliciesLive.Edit,
+         :edit
 
     live "/orgs/:org_slug/projects/:project_slug/waf/:id",
          WafLive.Show,

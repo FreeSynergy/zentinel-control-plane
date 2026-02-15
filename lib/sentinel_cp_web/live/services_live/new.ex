@@ -1,7 +1,7 @@
 defmodule SentinelCpWeb.ServicesLive.New do
   use SentinelCpWeb, :live_view
 
-  alias SentinelCp.{Audit, Orgs, Projects, Services}
+  alias SentinelCp.{Audit, Orgs, Projects, Services, Waf}
 
   @impl true
   def mount(%{"project_slug" => slug} = params, _session, socket) do
@@ -13,6 +13,7 @@ defmodule SentinelCpWeb.ServicesLive.New do
 
       project ->
         auth_policies = Services.list_auth_policies(project.id)
+        waf_policies = Waf.list_policies(project.id)
         upstream_groups = Services.list_upstream_groups(project.id)
         templates = Services.list_templates(project.id)
 
@@ -30,6 +31,7 @@ defmodule SentinelCpWeb.ServicesLive.New do
            project: project,
            route_type: "upstream",
            auth_policies: auth_policies,
+           waf_policies: waf_policies,
            upstream_groups: upstream_groups,
            templates: templates,
            applied_template: template_data,
@@ -157,6 +159,7 @@ defmodule SentinelCpWeb.ServicesLive.New do
 
     attrs = Map.put(attrs, :service_type, socket.assigns.service_type)
     attrs = maybe_put_fk(attrs, :auth_policy_id, params["auth_policy_id"])
+    attrs = maybe_put_fk(attrs, :waf_policy_id, params["waf_policy_id"])
 
     attrs = maybe_put_map(attrs, :graphql, params, "graphql")
     attrs = maybe_put_map(attrs, :grpc, params, "grpc")
@@ -382,6 +385,14 @@ defmodule SentinelCpWeb.ServicesLive.New do
             <select name="auth_policy_id" class="select select-bordered select-sm w-64">
               <option value="">None</option>
               <option :for={p <- @auth_policies} value={p.id}>{p.name} ({p.auth_type})</option>
+            </select>
+          </div>
+
+          <div :if={@waf_policies != []} class="form-control">
+            <label class="label"><span class="label-text font-medium">WAF Policy</span></label>
+            <select name="waf_policy_id" class="select select-bordered select-sm w-64">
+              <option value="">None</option>
+              <option :for={p <- @waf_policies} value={p.id}>{p.name} ({p.mode})</option>
             </select>
           </div>
 

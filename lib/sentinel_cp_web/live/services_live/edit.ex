@@ -1,7 +1,7 @@
 defmodule SentinelCpWeb.ServicesLive.Edit do
   use SentinelCpWeb, :live_view
 
-  alias SentinelCp.{Audit, Orgs, Projects, Services}
+  alias SentinelCp.{Audit, Orgs, Projects, Services, Waf}
 
   @impl true
   def mount(%{"project_slug" => slug, "id" => service_id} = params, _session, socket) do
@@ -18,6 +18,7 @@ defmodule SentinelCpWeb.ServicesLive.Edit do
         end
 
       auth_policies = Services.list_auth_policies(project.id)
+      waf_policies = Waf.list_policies(project.id)
       upstream_groups = Services.list_upstream_groups(project.id)
 
       existing_splits = get_in(service.traffic_split, ["splits"]) || []
@@ -31,6 +32,7 @@ defmodule SentinelCpWeb.ServicesLive.Edit do
          service: service,
          route_type: route_type,
          auth_policies: auth_policies,
+         waf_policies: waf_policies,
          upstream_groups: upstream_groups,
          show_traffic_split: service.traffic_split != %{} && service.traffic_split != nil,
          split_count: length(existing_splits),
@@ -161,6 +163,14 @@ defmodule SentinelCpWeb.ServicesLive.Edit do
         "" -> Map.put(attrs, :auth_policy_id, nil)
         nil -> attrs
         id -> Map.put(attrs, :auth_policy_id, id)
+      end
+
+    # waf_policy_id: empty string means clear, non-empty means set
+    attrs =
+      case params["waf_policy_id"] do
+        "" -> Map.put(attrs, :waf_policy_id, nil)
+        nil -> attrs
+        id -> Map.put(attrs, :waf_policy_id, id)
       end
 
     attrs = maybe_put_map(attrs, :graphql, params, "graphql")
@@ -368,6 +378,20 @@ defmodule SentinelCpWeb.ServicesLive.Edit do
                 selected={p.id == @service.auth_policy_id}
               >
                 {p.name} ({p.auth_type})
+              </option>
+            </select>
+          </div>
+
+          <div :if={@waf_policies != []} class="form-control">
+            <label class="label"><span class="label-text font-medium">WAF Policy</span></label>
+            <select name="waf_policy_id" class="select select-bordered select-sm w-64">
+              <option value="">None</option>
+              <option
+                :for={p <- @waf_policies}
+                value={p.id}
+                selected={p.id == @service.waf_policy_id}
+              >
+                {p.name} ({p.mode})
               </option>
             </select>
           </div>

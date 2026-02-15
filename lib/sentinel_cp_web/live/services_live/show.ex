@@ -1,7 +1,7 @@
 defmodule SentinelCpWeb.ServicesLive.Show do
   use SentinelCpWeb, :live_view
 
-  alias SentinelCp.{Audit, Orgs, Projects, Services}
+  alias SentinelCp.{Audit, Orgs, Projects, Services, Waf}
   alias SentinelCp.Services.KdlGenerator
 
   @impl true
@@ -17,6 +17,9 @@ defmodule SentinelCpWeb.ServicesLive.Show do
       auth_policy =
         if service.auth_policy_id, do: Services.get_auth_policy(service.auth_policy_id), else: nil
 
+      waf_policy =
+        if service.waf_policy_id, do: Waf.get_policy(service.waf_policy_id), else: nil
+
       middleware_chain = Services.list_service_middlewares(service.id)
       available_middlewares = Services.list_middlewares(project.id)
 
@@ -27,6 +30,7 @@ defmodule SentinelCpWeb.ServicesLive.Show do
          project: project,
          service: service,
          auth_policy: auth_policy,
+         waf_policy: waf_policy,
          middleware_chain: middleware_chain,
          available_middlewares: available_middlewares,
          kdl_preview: kdl_preview
@@ -200,6 +204,9 @@ defmodule SentinelCpWeb.ServicesLive.Show do
             <:item label="Path Rewrite">{format_map(@service.path_rewrite)}</:item>
             <:item label="Auth Policy">
               {if @auth_policy, do: "#{@auth_policy.name} (#{@auth_policy.auth_type})", else: "—"}
+            </:item>
+            <:item label="WAF Policy">
+              {if @waf_policy, do: "#{@waf_policy.name} (#{@waf_policy.mode})", else: "—"}
             </:item>
             <:item label="Security">{format_map(@service.security)}</:item>
             <:item label="Request Transform">{format_map(@service.request_transform)}</:item>
