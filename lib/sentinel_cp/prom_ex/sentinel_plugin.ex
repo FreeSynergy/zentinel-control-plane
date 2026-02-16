@@ -46,6 +46,19 @@ defmodule SentinelCp.PromEx.SentinelPlugin do
           event_name: [:sentinel_cp, :drift, :nodes, :drifted_count],
           description: "Number of currently drifted nodes",
           measurement: :count
+        ),
+        last_value(
+          [:sentinel_cp, :slos, :total],
+          event_name: [:sentinel_cp, :slos, :status_count],
+          description: "Total number of SLOs by status",
+          measurement: :count,
+          tags: [:status]
+        ),
+        last_value(
+          [:sentinel_cp, :alerts, :firing],
+          event_name: [:sentinel_cp, :alerts, :firing_count],
+          description: "Number of currently firing alerts",
+          measurement: :count
         )
       ]
     )
@@ -120,6 +133,26 @@ defmodule SentinelCp.PromEx.SentinelPlugin do
       %{count: drifted_nodes},
       %{}
     )
+
+    # SLO status counts
+    for status <- ["healthy", "warning", "breached"] do
+      count = poll_slo_count(status)
+
+      :telemetry.execute(
+        [:sentinel_cp, :slos, :status_count],
+        %{count: count},
+        %{status: status}
+      )
+    end
+
+    # Firing alerts
+    firing_alerts = poll_firing_alerts()
+
+    :telemetry.execute(
+      [:sentinel_cp, :alerts, :firing_count],
+      %{count: firing_alerts},
+      %{}
+    )
   end
 
   defp poll_node_count(status) do
@@ -164,6 +197,40 @@ defmodule SentinelCp.PromEx.SentinelPlugin do
         where: not is_nil(n.expected_bundle_id),
         where: n.active_bundle_id != n.expected_bundle_id or is_nil(n.active_bundle_id)
       ),
+      :count
+    )
+  rescue
+    _ -> 0
+  end
+
+  defp poll_slo_count(status) do
+    import Ecto.Query
+
+    budget_filter =
+      case status do
+        "healthy" ->
+          dynamic([s], is_nil(s.error_budget_remaining) or s.error_budget_remaining >= 50.0)
+
+        "warning" ->
+          dynamic([s], s.error_budget_remaining < 50.0 and s.error_budget_remaining > 0.0)
+
+        "breached" ->
+          dynamic([s], s.error_budget_remaining <= 0.0)
+      end
+
+    SentinelCp.Repo.aggregate(
+      from(s in "slos", where: ^budget_filter),
+      :count
+    )
+  rescue
+    _ -> 0
+  end
+
+  defp poll_firing_alerts do
+    import Ecto.Query
+
+    SentinelCp.Repo.aggregate(
+      from(s in "alert_states", where: s.state == "firing"),
       :count
     )
   rescue

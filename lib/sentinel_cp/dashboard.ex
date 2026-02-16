@@ -37,12 +37,16 @@ defmodule SentinelCp.Dashboard do
   Returns overview for a single project.
   """
   def get_project_overview(project_id) do
+    alias SentinelCp.Observability
+
     %{
       node_stats: get_project_node_stats(project_id),
       active_rollouts: count_active_rollouts([project_id]),
       recent_bundles: count_recent_bundles([project_id], 7),
       latest_bundles: list_latest_bundles(project_id, 5),
-      latest_rollouts: list_latest_rollouts(project_id, 5)
+      latest_rollouts: list_latest_rollouts(project_id, 5),
+      slo_summary: Observability.slo_summary(project_id),
+      firing_alert_count: Observability.firing_alert_count(project_id)
     }
   end
 

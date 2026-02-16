@@ -231,6 +231,15 @@ defmodule SentinelCpWeb.Router do
     live "/projects/:project_slug/waf/:id", WafLive.Show, :show
     live "/projects/:project_slug/analytics", AnalyticsLive.Index, :index
     live "/projects/:project_slug/analytics/services/:service_id", AnalyticsLive.Service, :show
+    live "/projects/:project_slug/slos", SlosLive.Index, :index
+    live "/projects/:project_slug/slos/new", SlosLive.New, :new
+    live "/projects/:project_slug/slos/:id", SlosLive.Show, :show
+    live "/projects/:project_slug/slos/:id/edit", SlosLive.Edit, :edit
+    live "/projects/:project_slug/alerts", AlertsLive.Index, :index
+    live "/projects/:project_slug/alerts/rules", AlertsLive.Rules, :index
+    live "/projects/:project_slug/alerts/rules/new", AlertsLive.RuleNew, :new
+    live "/projects/:project_slug/alerts/rules/:id", AlertsLive.RuleShow, :show
+    live "/projects/:project_slug/alerts/rules/:id/edit", AlertsLive.RuleEdit, :edit
     live "/projects/:project_slug/openapi/import", OpenApiLive.Import, :import
 
     # Org-scoped dashboard
@@ -483,6 +492,42 @@ defmodule SentinelCpWeb.Router do
     live "/orgs/:org_slug/projects/:project_slug/analytics/services/:service_id",
          AnalyticsLive.Service,
          :show
+
+    live "/orgs/:org_slug/projects/:project_slug/slos",
+         SlosLive.Index,
+         :index
+
+    live "/orgs/:org_slug/projects/:project_slug/slos/new",
+         SlosLive.New,
+         :new
+
+    live "/orgs/:org_slug/projects/:project_slug/slos/:id",
+         SlosLive.Show,
+         :show
+
+    live "/orgs/:org_slug/projects/:project_slug/slos/:id/edit",
+         SlosLive.Edit,
+         :edit
+
+    live "/orgs/:org_slug/projects/:project_slug/alerts",
+         AlertsLive.Index,
+         :index
+
+    live "/orgs/:org_slug/projects/:project_slug/alerts/rules",
+         AlertsLive.Rules,
+         :index
+
+    live "/orgs/:org_slug/projects/:project_slug/alerts/rules/new",
+         AlertsLive.RuleNew,
+         :new
+
+    live "/orgs/:org_slug/projects/:project_slug/alerts/rules/:id",
+         AlertsLive.RuleShow,
+         :show
+
+    live "/orgs/:org_slug/projects/:project_slug/alerts/rules/:id/edit",
+         AlertsLive.RuleEdit,
+         :edit
 
     live "/orgs/:org_slug/projects/:project_slug/openapi/import",
          OpenApiLive.Import,

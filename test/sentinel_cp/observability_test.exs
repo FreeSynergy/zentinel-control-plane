@@ -582,6 +582,161 @@ defmodule SentinelCp.ObservabilityTest do
     end
   end
 
+  # ─── 15.5 New Context Functions ──────────────────────────────────
+
+  describe "new context functions" do
+    test "list_all_enabled_slos returns all enabled SLOs across projects", %{project: project} do
+      {:ok, _} =
+        Observability.create_slo(%{
+          project_id: project.id,
+          name: "Enabled SLO",
+          sli_type: "availability",
+          target: 99.9,
+          enabled: true
+        })
+
+      {:ok, _} =
+        Observability.create_slo(%{
+          project_id: project.id,
+          name: "Disabled SLO",
+          sli_type: "error_rate",
+          target: 1.0,
+          enabled: false
+        })
+
+      enabled = Observability.list_all_enabled_slos()
+      assert length(enabled) == 1
+      assert hd(enabled).name == "Enabled SLO"
+    end
+
+    test "slo_summary returns counts by status", %{project: project} do
+      {:ok, _} =
+        Observability.create_slo(%{
+          project_id: project.id,
+          name: "Healthy SLO",
+          sli_type: "availability",
+          target: 99.9,
+          error_budget_remaining: 80.0
+        })
+
+      {:ok, _} =
+        Observability.create_slo(%{
+          project_id: project.id,
+          name: "Warning SLO",
+          sli_type: "error_rate",
+          target: 1.0,
+          error_budget_remaining: 20.0
+        })
+
+      summary = Observability.slo_summary(project.id)
+      assert summary.total == 2
+      assert summary.healthy == 1
+      assert summary.warning == 1
+      assert summary.breached == 0
+    end
+
+    test "slo_status returns correct status based on budget" do
+      assert Observability.slo_status(%Observability.Slo{error_budget_remaining: nil}) == :healthy
+
+      assert Observability.slo_status(%Observability.Slo{error_budget_remaining: 80.0}) ==
+               :healthy
+
+      assert Observability.slo_status(%Observability.Slo{error_budget_remaining: 30.0}) ==
+               :warning
+
+      assert Observability.slo_status(%Observability.Slo{error_budget_remaining: 0.0}) ==
+               :breached
+
+      assert Observability.slo_status(%Observability.Slo{error_budget_remaining: -5.0}) ==
+               :breached
+    end
+
+    test "get_slo! raises on missing ID" do
+      assert_raise Ecto.NoResultsError, fn ->
+        Observability.get_slo!(Ecto.UUID.generate())
+      end
+    end
+
+    test "get_alert_rule! raises on missing ID" do
+      assert_raise Ecto.NoResultsError, fn ->
+        Observability.get_alert_rule!(Ecto.UUID.generate())
+      end
+    end
+
+    test "list_firing_alerts returns active alerts with preloaded rules", %{project: project} do
+      {:ok, rule} =
+        Observability.create_alert_rule(%{
+          project_id: project.id,
+          name: "Firing Test",
+          rule_type: "metric",
+          condition: %{"metric" => "error_rate", "operator" => ">", "value" => 5.0}
+        })
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, _} =
+        %AlertState{}
+        |> AlertState.changeset(%{
+          alert_rule_id: rule.id,
+          state: "firing",
+          started_at: now,
+          firing_at: now,
+          value: 10.0,
+          fingerprint: "list-firing"
+        })
+        |> Repo.insert()
+
+      alerts = Observability.list_firing_alerts(project.id)
+      assert length(alerts) == 1
+      assert hd(alerts).alert_rule.name == "Firing Test"
+    end
+
+    test "list_recent_alert_states returns history", %{project: project} do
+      {:ok, rule} =
+        Observability.create_alert_rule(%{
+          project_id: project.id,
+          name: "History Test",
+          rule_type: "metric",
+          condition: %{"metric" => "error_rate", "operator" => ">", "value" => 5.0}
+        })
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      for i <- 1..3 do
+        {:ok, _} =
+          %AlertState{}
+          |> AlertState.changeset(%{
+            alert_rule_id: rule.id,
+            state: "resolved",
+            started_at: DateTime.add(now, -i * 60, :second),
+            value: 10.0 + i,
+            fingerprint: "history-#{i}"
+          })
+          |> Repo.insert()
+      end
+
+      states = Observability.list_recent_alert_states(rule.id, limit: 2)
+      assert length(states) == 2
+    end
+  end
+
+  describe "SLI worker" do
+    test "perform computes all enabled SLOs", %{project: project} do
+      {:ok, _} =
+        Observability.create_slo(%{
+          project_id: project.id,
+          name: "Worker SLO",
+          sli_type: "availability",
+          target: 99.9
+        })
+
+      assert :ok == SentinelCp.Observability.SliWorker.perform(%Oban.Job{})
+
+      slo = hd(Observability.list_slos(project.id))
+      assert slo.last_computed_at != nil
+    end
+  end
+
   # ─── Helpers ─────────────────────────────────────────────────────
 
   defp service_fixture(project) do

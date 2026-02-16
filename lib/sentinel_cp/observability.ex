@@ -31,6 +31,9 @@ defmodule SentinelCp.Observability do
   @doc "Gets an SLO by ID."
   def get_slo(id), do: Repo.get(Slo, id)
 
+  @doc "Gets an SLO by ID, raising if not found."
+  def get_slo!(id), do: Repo.get!(Slo, id)
+
   @doc "Lists all SLOs for a project."
   def list_slos(project_id) do
     from(s in Slo, where: s.project_id == ^project_id, order_by: [asc: s.name])
@@ -42,6 +45,31 @@ defmodule SentinelCp.Observability do
     from(s in Slo, where: s.project_id == ^project_id and s.enabled == true)
     |> Repo.all()
   end
+
+  @doc "Lists all enabled SLOs across all projects (for the SLI worker)."
+  def list_all_enabled_slos do
+    from(s in Slo, where: s.enabled == true, order_by: [asc: s.inserted_at])
+    |> Repo.all()
+  end
+
+  @doc "Returns a summary of SLO statuses for a project."
+  def slo_summary(project_id) do
+    slos = list_slos(project_id)
+
+    Enum.reduce(slos, %{total: 0, healthy: 0, warning: 0, breached: 0}, fn slo, acc ->
+      status = slo_status(slo)
+
+      acc
+      |> Map.update!(:total, &(&1 + 1))
+      |> Map.update!(status, &(&1 + 1))
+    end)
+  end
+
+  @doc "Returns the status atom for an SLO based on error budget remaining."
+  def slo_status(%Slo{error_budget_remaining: nil}), do: :healthy
+  def slo_status(%Slo{error_budget_remaining: budget}) when budget >= 50.0, do: :healthy
+  def slo_status(%Slo{error_budget_remaining: budget}) when budget > 0.0, do: :warning
+  def slo_status(%Slo{}), do: :breached
 
   @doc "Deletes an SLO."
   def delete_slo(slo), do: Repo.delete(slo)
@@ -74,6 +102,9 @@ defmodule SentinelCp.Observability do
 
   @doc "Gets an alert rule by ID."
   def get_alert_rule(id), do: Repo.get(AlertRule, id)
+
+  @doc "Gets an alert rule by ID, raising if not found."
+  def get_alert_rule!(id), do: Repo.get!(AlertRule, id)
 
   @doc "Lists alert rules for a project."
   def list_alert_rules(project_id) do
@@ -139,5 +170,32 @@ defmodule SentinelCp.Observability do
       where: r.project_id == ^project_id and s.state == "firing"
     )
     |> Repo.aggregate(:count)
+  end
+
+  @doc "Gets an alert state by ID, raising if not found."
+  def get_alert_state!(id), do: Repo.get!(AlertState, id)
+
+  @doc "Lists firing and pending alert states for a project, with preloaded rules."
+  def list_firing_alerts(project_id) do
+    from(s in AlertState,
+      join: r in AlertRule,
+      on: s.alert_rule_id == r.id,
+      where: r.project_id == ^project_id and s.state in ["firing", "pending"],
+      order_by: [desc: s.started_at],
+      preload: [alert_rule: r]
+    )
+    |> Repo.all()
+  end
+
+  @doc "Lists recent alert states for a rule (paginated history)."
+  def list_recent_alert_states(alert_rule_id, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 50)
+
+    from(s in AlertState,
+      where: s.alert_rule_id == ^alert_rule_id,
+      order_by: [desc: s.started_at],
+      limit: ^limit
+    )
+    |> Repo.all()
   end
 end
