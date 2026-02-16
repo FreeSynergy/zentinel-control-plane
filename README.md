@@ -23,7 +23,7 @@
 
 <p align="center">
   <a href="https://github.com/raskell-io/sentinel">Sentinel Proxy</a> •
-  <a href="https://sentinel.raskell.io/docs/">Documentation</a> •
+  <a href="docs/index.md">Documentation</a> •
   <a href="https://github.com/raskell-io/sentinel/discussions">Discussions</a>
 </p>
 
@@ -73,7 +73,16 @@ Every mutation is audit-logged with actor, action, and diff.
 | **Multi-Tenant** | Organizations, projects, and scoped API keys with RBAC |
 | **GitOps** | GitHub webhook integration — auto-compile bundles on push |
 | **Audit Logging** | Every mutation logged with who, what, when, and resource diff |
-| **Observability** | Prometheus metrics, structured JSON logging, health endpoints |
+| **SLO/SLI Monitoring** | Define SLOs with error budget tracking and burn rate alerts |
+| **Alerting** | Threshold, anomaly, and SLO burn rate alert rules with silencing |
+| **WAF** | ~60 OWASP CRS rules, policy system, anomaly detection, analytics |
+| **SSO** | OIDC (with PKCE) and SAML 2.0 with JIT provisioning and group mapping |
+| **TOTP MFA** | Time-based one-time passwords with recovery codes |
+| **Notifications** | Route events to Slack, PagerDuty, Teams, Email, or webhooks |
+| **Service Topology** | Visual graph of services, upstreams, middlewares, and policies |
+| **GraphQL API** | Absinthe-powered with real-time subscriptions |
+| **Developer Portal** | Auto-generated API docs from OpenAPI specs per project |
+| **Observability** | Prometheus metrics, OpenTelemetry tracing, structured JSON logging |
 | **LiveView UI** | K8s-style sidebar layout with real-time updates across all views |
 | **Node Simulator** | Built-in fleet simulator for testing rollout logic without real nodes |
 
@@ -87,39 +96,53 @@ The control plane provides a comprehensive LiveView UI with real-time updates:
 | **Nodes** | `.../nodes` | Node list with status, labels, bundle versions, and health |
 | **Bundles** | `.../bundles` | Bundle management with diff viewer, SBOM inspector, and promotion pipeline |
 | **Rollouts** | `.../rollouts` | Rollout list with progress tracking, controls, and node-level status |
+| **Services** | `.../services` | Service routing configuration with upstream, middleware, and policy attachment |
+| **Topology** | `.../topology` | Visual service graph showing services, upstreams, and policies |
+| **Certificates** | `.../certificates` | TLS certificate management with ACME/Let's Encrypt support |
 | **Drift** | `.../drift` | Drift events with filtering and manual resolution |
 | **Node Groups** | `.../node-groups` | Label-based node organization |
 | **Environments** | `.../environments` | Promotion pipeline configuration |
-| **Health Checks** | `.../health-checks` | Custom health check definitions |
+| **SLOs** | `.../slos` | SLO definitions with error budget tracking and burn rate |
+| **Alerts** | `.../alerts` | Alert rules with firing state, silencing, and acknowledgment |
+| **WAF** | `.../waf-policies` | WAF policy management with rule overrides and analytics |
+| **Notifications** | `.../notifications` | Notification channels and routing rules with delivery tracking |
+| **Secrets** | `.../secrets` | Encrypted secret management with rotation and environment scoping |
 | **Webhooks** | `.../webhooks` | GitHub integration configuration |
 | **Schedule** | `/schedule` | Calendar view of scheduled rollouts |
 | **Approvals** | `/approvals` | Pending rollout approval queue |
 | **API Keys** | `/api-keys` | Scoped API key management |
 | **Audit Log** | `/audit` | Searchable audit trail with export |
-| **Profile** | `/profile` | User settings and password management |
+| **Profile** | `/profile` | User settings and MFA configuration |
 
 ## Quick Start
 
-### Prerequisites
+### Docker Compose (Recommended)
 
-- [mise](https://mise.jdx.dev/) (manages Elixir 1.15+ / OTP 26+ and task runner)
-- PostgreSQL (production) or SQLite (development)
-- A [Sentinel](https://github.com/raskell-io/sentinel) binary (for config validation)
-
-### Development
+The fastest way to get running. Starts the control plane, PostgreSQL, and MinIO with a single command:
 
 ```bash
-# Clone and setup
+git clone https://github.com/raskell-io/sentinel-control-plane.git
+cd sentinel-control-plane
+docker compose up
+```
+
+This builds the image, runs database migrations automatically, and serves the control plane at [localhost:4000](http://localhost:4000). MinIO console is available at [localhost:9001](http://localhost:9001) (credentials: `minioadmin` / `minioadmin`).
+
+### Local Development
+
+For development with hot-reloading and SQLite (no external databases needed):
+
+```bash
 git clone https://github.com/raskell-io/sentinel-control-plane.git
 cd sentinel-control-plane
 mise install
 mise run setup
-
-# Start the development server
 mise run dev
 ```
 
-Visit [localhost:4000](http://localhost:4000). Default login: `admin@localhost` / `changeme123456`.
+Visit [localhost:4000](http://localhost:4000).
+
+**Prerequisites:** [mise](https://mise.jdx.dev/) (manages Elixir/OTP), Docker (for MinIO), and optionally a [Sentinel](https://github.com/raskell-io/sentinel) binary for config validation.
 
 ### Development Commands
 
@@ -133,24 +156,6 @@ mise run format           # Format all Elixir files
 mise run db:reset         # Drop, create, and migrate database
 mise run db:migrate       # Run pending migrations
 mise run routes           # List all routes
-```
-
-### Local Dev Stack (Docker Compose)
-
-Starts PostgreSQL, MinIO (S3), and the control plane together:
-
-```bash
-docker compose -f docker-compose.dev.yml up
-```
-
-### Production Docker
-
-```bash
-docker build -t sentinel-cp .
-docker run -p 4000:4000 \
-  -e DATABASE_URL="postgres://user:pass@host/sentinel_cp" \
-  -e SECRET_KEY_BASE="$(mix phx.gen.secret)" \
-  sentinel-cp
 ```
 
 ## API
@@ -238,11 +243,26 @@ POST /api/v1/webhooks/github    # Auto-compile on push (signature verified)
 ## Tech Stack
 
 - **Elixir / Phoenix 1.8** — Web framework with LiveView for real-time UI
-- **Oban** — Reliable background jobs for bundle compilation and rollout orchestration
+- **Oban** — Reliable background jobs for compilation, rollouts, monitoring, and notifications
+- **Absinthe** — GraphQL API with real-time subscriptions
 - **PostgreSQL** — Persistent state (SQLite for development)
 - **S3 / MinIO** — Bundle artifact storage
-- **Ed25519** — Bundle signing via JOSE
+- **Ed25519** — Bundle and JWT signing via JOSE
 - **PromEx** — Prometheus metrics integration
+- **OpenTelemetry** — Distributed tracing for API, Ecto, and Phoenix
+
+## Documentation
+
+Full documentation is available in the [`docs/`](docs/index.md) directory:
+
+- [Getting Started](docs/getting-started.md) — Install, first project, first rollout
+- [Architecture](docs/architecture.md) — System design and data flow
+- [Core Concepts](docs/core-concepts.md) — Orgs, projects, bundles, nodes, rollouts
+- [Configuration Management](docs/configuration-management.md) — Services, upstreams, certificates, secrets
+- [Deployment & Rollouts](docs/deployment-and-rollouts.md) — Strategies, health gates, approvals
+- [Security](docs/security.md) — WAF, auth policies, signing, SSO, MFA
+- [Observability](docs/observability.md) — SLOs, alerts, Prometheus, OpenTelemetry
+- [API Reference](docs/api-reference.md) — REST, Node, and GraphQL APIs
 
 ## Related
 
