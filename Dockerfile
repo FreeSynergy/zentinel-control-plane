@@ -75,4 +75,4 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -f http://localhost:4000/health || exit 1
 
-CMD ["/app/bin/sentinel_cp", "start"]
+CMD /app/bin/sentinel_cp eval "SentinelCp.Release.migrate()" && /app/bin/sentinel_cp start
