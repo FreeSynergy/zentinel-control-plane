@@ -4,15 +4,45 @@ This guide walks you through installing Sentinel Control Plane, creating your fi
 
 ## Prerequisites
 
+**Docker Compose** (Option A): Only [Docker](https://docs.docker.com/get-docker/) is required — all dependencies are included.
+
+**Local development** (Option B):
 - **Elixir** 1.16+ and **Erlang/OTP** 26+ (managed via [mise](https://mise.jdx.dev/))
-- **PostgreSQL** 15+ (production) or SQLite (development — zero configuration)
-- **S3-compatible storage** — MinIO for local development, AWS S3 for production
+- **Docker** — for MinIO (bundle storage)
 - **Sentinel CLI** — the `sentinel` binary for configuration validation and compilation
 
 ## Installation
 
+### Option A: Docker Compose (Recommended)
+
+The fastest way to get running. This starts the control plane, PostgreSQL, and MinIO (S3-compatible storage) with a single command:
+
 ```bash
-# Clone the repository
+git clone https://github.com/raskell-io/sentinel-control-plane.git
+cd sentinel-control-plane
+docker compose up
+```
+
+This will:
+1. Build the control plane from the Dockerfile
+2. Start PostgreSQL 17 and MinIO
+3. Create the `sentinel-bundles` S3 bucket automatically
+4. Run database migrations on first startup
+5. Serve the control plane at `http://localhost:4000`
+
+MinIO console is available at `http://localhost:9001` (credentials: `minioadmin` / `minioadmin`).
+
+To stop and remove volumes:
+
+```bash
+docker compose down -v
+```
+
+### Option B: Local Development
+
+For development with hot-reloading and SQLite (no external databases needed):
+
+```bash
 git clone https://github.com/raskell-io/sentinel-control-plane.git
 cd sentinel-control-plane
 
@@ -23,6 +53,8 @@ mise run setup
 # Start the development server
 mise run dev
 ```
+
+This uses SQLite (zero configuration) and starts MinIO via `docker-compose.dev.yml` for bundle storage.
 
 The control plane starts at `http://localhost:4000`.
 
