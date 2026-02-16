@@ -1,7 +1,7 @@
 # ---- Build Stage ----
 ARG ELIXIR_VERSION=1.19.5
 ARG OTP_VERSION=28.3.1
-ARG DEBIAN_VERSION=bookworm-20241202-slim
+ARG DEBIAN_VERSION=bookworm-20260202-slim
 ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${DEBIAN_VERSION}"
 ARG RUNNER_IMAGE="debian:${DEBIAN_VERSION}"
 
@@ -28,17 +28,17 @@ RUN mkdir config
 COPY config/config.exs config/prod.exs config/
 RUN mix deps.compile
 
-# Copy application code
+# Copy application code and runtime config
 COPY priv priv
 COPY lib lib
 COPY assets assets
-
-# Compile assets
-RUN mix assets.deploy
-
-# Compile the release
 COPY config/runtime.exs config/
+
+# Compile the application (generates phoenix-colocated hooks needed by esbuild)
 RUN mix compile
+
+# Compile assets (must run after mix compile for colocated hooks)
+RUN mix assets.deploy
 
 # Build the release
 RUN mix release
