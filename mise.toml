@@ -14,8 +14,7 @@ description = "Install dependencies and set up the project"
 run = """
 mix local.hex --force
 mix local.rebar --force
-mix deps.get
-mix ecto.setup
+mix setup
 """
 
 [tasks.server]
