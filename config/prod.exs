@@ -14,15 +14,16 @@ config :zentinel_cp, Oban, engine: Oban.Engines.Basic
 config :zentinel_cp, ZentinelCpWeb.Endpoint,
   cache_static_manifest: "priv/static/cache_manifest.json"
 
-# Force using SSL in production. This also sets the "strict-security-transport" header,
-# known as HSTS. If you have a health check endpoint, you may want to exclude it below.
-# Note `:force_ssl` is required to be set at compile-time.
-config :zentinel_cp, ZentinelCpWeb.Endpoint,
-  force_ssl: [rewrite_on: [:x_forwarded_proto]],
-  exclude: [
-    # paths: ["/health"],
-    hosts: ["localhost", "127.0.0.1"]
-  ]
+# Force SSL in production (opt-in via FORCE_SSL=true at build time).
+# Sets the "strict-transport-security" header (HSTS) and redirects HTTP → HTTPS.
+# Note: `force_ssl` must be set at compile-time.
+if System.get_env("FORCE_SSL") in ["true", "1"] do
+  config :zentinel_cp, ZentinelCpWeb.Endpoint,
+    force_ssl: [
+      rewrite_on: [:x_forwarded_proto],
+      exclude: ["localhost", "127.0.0.1"]
+    ]
+end
 
 # Configure Swoosh API Client
 config :swoosh, api_client: Swoosh.ApiClient.Req

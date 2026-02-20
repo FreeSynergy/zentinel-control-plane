@@ -6,7 +6,7 @@ services:
     environment:
       DATABASE_URL: "ecto://zentinel:zentinel@postgres:5432/zentinel_cp"
       SECRET_KEY_BASE: "change-me-in-production-use-mix-phx-gen-secret-to-generate"
-      PHX_HOST: "localhost"
+      # PHX_HOST: "your-domain.com"  # Set to your server's domain or IP
       PORT: "4000"
       S3_ENDPOINT: "http://minio:9000"
       S3_BUCKET: "zentinel-bundles"
@@ -37,7 +37,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U zentinel"]
+      test: ["CMD-SHELL", "pg_isready -U zentinel -d zentinel_cp"]
       interval: 5s
       timeout: 5s
       retries: 5

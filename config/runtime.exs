@@ -90,8 +90,15 @@ if config_env() == :prod do
 
   config :zentinel_cp, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
+  port = String.to_integer(System.get_env("PORT") || "4000")
+
+  {url_scheme, url_port} =
+    if System.get_env("FORCE_SSL") in ["true", "1"],
+      do: {"https", 443},
+      else: {"http", port}
+
   config :zentinel_cp, ZentinelCpWeb.Endpoint,
-    url: [host: host, port: 443, scheme: "https"],
+    url: [host: host, port: url_port, scheme: url_scheme],
     http: [
       # Enable IPv6 and bind on all interfaces.
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
