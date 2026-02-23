@@ -15,8 +15,7 @@ RUN apt-get update -y && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Download and verify the zentinel binary (used for bundle validation)
-RUN ARCH=$(case "${TARGETARCH}" in arm64) echo "aarch64";; *) echo "x86_64";; esac) && \
-    TARBALL="zentinel-${ZENTINEL_VERSION}-linux-${ARCH}.tar.gz" && \
+RUN TARBALL="zentinel-${ZENTINEL_VERSION}-linux-${TARGETARCH}.tar.gz" && \
     URL="https://github.com/zentinelproxy/zentinel/releases/download/${ZENTINEL_VERSION}/${TARBALL}" && \
     curl -fSL "${URL}" -o "/tmp/${TARBALL}" && \
     curl -fSL "${URL}.sha256" -o "/tmp/${TARBALL}.sha256" && \
