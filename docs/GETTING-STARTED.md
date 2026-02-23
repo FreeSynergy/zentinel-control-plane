@@ -9,6 +9,8 @@
 - Docker — for MinIO (bundle storage)
 - `zentinel` CLI binary — for configuration validation and compilation
 
+**Standalone / production deployment:** If you have your own PostgreSQL and S3, see the [standalone Docker and bare-metal options in DEPLOYMENT.md](DEPLOYMENT.md#standalone-docker).
+
 ## Docker Compose
 
 Starts the control plane, PostgreSQL 17, and MinIO with one command:
@@ -148,7 +150,7 @@ Roles are per-organization. A user can have different roles in different orgs.
      -H "Content-Type: application/json" \
      -d '{"name": "proxy-1", "labels": {"env": "dev"}}'
    ```
-   Store the returned `node_key` — it is only shown once.
+   Store the returned `node_key` — it is only shown once. See [PROXY-REGISTRATION.md](PROXY-REGISTRATION.md) for the full guide on connecting proxies, configuring JWT auth, and deploying bundles.
 
 6. **Deploy with a Rollout** — Rollouts > New Rollout. Select bundle, choose strategy (rolling, canary, blue-green, all-at-once), configure health gates, start.
 
@@ -159,6 +161,7 @@ Roles are per-organization. A user can have different roles in different orgs.
 - [AUTHENTICATION.md](AUTHENTICATION.md) — API keys, node auth, SSO, MFA
 - [CONFIGURATION.md](CONFIGURATION.md) — Services, upstreams, TLS, environment variables
 - [DEPLOYMENT.md](DEPLOYMENT.md) — Production deployment and rollout strategies
+- [PROXY-REGISTRATION.md](PROXY-REGISTRATION.md) — Connecting proxy instances to the control plane
 - [SECURITY.md](SECURITY.md) — WAF, auth policies, bundle signing
 - [OBSERVABILITY.md](OBSERVABILITY.md) — Prometheus, SLOs, alerts, tracing
 - [DEVELOPMENT.md](DEVELOPMENT.md) — Building, testing, contributing
