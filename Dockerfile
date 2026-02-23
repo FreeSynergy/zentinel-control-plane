@@ -7,9 +7,24 @@ ARG RUNNER_IMAGE="debian:${DEBIAN_VERSION}"
 
 FROM ${BUILDER_IMAGE} AS builder
 
+ARG ZENTINEL_VERSION=26.02_13
+ARG TARGETARCH
+
 RUN apt-get update -y && \
     apt-get install -y build-essential git curl && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Download and verify the zentinel binary (used for bundle validation)
+RUN ARCH=$(case "${TARGETARCH}" in arm64) echo "aarch64";; *) echo "x86_64";; esac) && \
+    TARBALL="zentinel-${ZENTINEL_VERSION}-linux-${ARCH}.tar.gz" && \
+    URL="https://github.com/zentinelproxy/zentinel/releases/download/${ZENTINEL_VERSION}/${TARBALL}" && \
+    curl -fSL "${URL}" -o "/tmp/${TARBALL}" && \
+    curl -fSL "${URL}.sha256" -o "/tmp/${TARBALL}.sha256" && \
+    cd /tmp && sha256sum -c "${TARBALL}.sha256" && \
+    tar -xzf "/tmp/${TARBALL}" -C /tmp && \
+    mv /tmp/zentinel /usr/local/bin/zentinel && \
+    chmod +x /usr/local/bin/zentinel && \
+    rm -f "/tmp/${TARBALL}" "/tmp/${TARBALL}.sha256"
 
 WORKDIR /app
 
@@ -64,6 +79,10 @@ ENV PHX_SERVER=true
 
 # Copy the release from the build stage
 COPY --from=builder /app/_build/prod/rel/zentinel_cp ./
+
+# Copy the zentinel binary for bundle validation
+COPY --from=builder /usr/local/bin/zentinel /usr/local/bin/zentinel
+ENV ZENTINEL_BINARY=/usr/local/bin/zentinel
 
 # Copy entrypoint script
 COPY entrypoint.sh /app/entrypoint.sh

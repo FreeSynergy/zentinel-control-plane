@@ -198,6 +198,7 @@ Supported providers: GitHub, GitLab, Bitbucket, Gitea, generic (HMAC-verified).
 | `S3_SECRET_ACCESS_KEY` | Yes | — | S3 secret key |
 | `S3_REGION` | No | `us-east-1` | S3 region |
 | `ZENTINEL_BINARY` | No | `zentinel` | Path to zentinel CLI |
+| `ZENTINEL_VERSION` | No | `26.02_13` | Zentinel binary version (Docker build arg) |
 | `GITHUB_WEBHOOK_SECRET` | No | — | GitHub webhook HMAC secret |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | No | — | OpenTelemetry endpoint |
 | `FORCE_SSL` | No | `false` | Redirect HTTP → HTTPS |

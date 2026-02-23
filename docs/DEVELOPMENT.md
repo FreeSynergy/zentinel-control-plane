@@ -4,7 +4,7 @@
 
 - Elixir 1.16+ / Erlang OTP 26+ (managed via [mise](https://mise.jdx.dev/))
 - Docker — for MinIO (bundle storage)
-- `zentinel` CLI binary — for configuration validation during bundle compilation
+- `zentinel` CLI binary — for configuration validation during bundle compilation (Docker deployment includes this automatically)
 
 ## Setup
 

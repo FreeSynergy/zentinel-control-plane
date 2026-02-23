@@ -22,12 +22,13 @@ docker compose up
 What happens:
 
 1. Multi-stage Dockerfile builds the Elixir release (base: `hexpm/elixir:1.19.5-erlang-28.3.1-debian-bookworm`)
-2. PostgreSQL 17 starts (port 5432, user: `zentinel`, password: `zentinel`)
-3. MinIO starts (port 9000 API, port 9001 console)
-4. `minio-init` container creates the `zentinel-bundles` bucket
-5. App waits for PostgreSQL readiness (`pg_isready`), runs Ecto migrations
-6. Database seeded with default org and admin user
-7. Control plane available at **http://localhost:4000**
+2. The `zentinel` binary is downloaded and verified during image build — bundle validation works out-of-the-box
+3. PostgreSQL 17 starts (port 5432, user: `zentinel`, password: `zentinel`)
+4. MinIO starts (port 9000 API, port 9001 console)
+5. `minio-init` container creates the `zentinel-bundles` bucket
+6. App waits for PostgreSQL readiness (`pg_isready`), runs Ecto migrations
+7. Database seeded with default org and admin user
+8. Control plane available at **http://localhost:4000**
 
 MinIO console: **http://localhost:9001** (credentials: `minioadmin` / `minioadmin`)
 
@@ -58,6 +59,7 @@ docker compose down -v
 | `S3_SECRET_ACCESS_KEY` | `minioadmin` | MinIO secret key |
 | `S3_REGION` | `us-east-1` | S3 region |
 | `PORT` | `4000` | HTTP listen port |
+| `ZENTINEL_VERSION` | `26.02_13` | Zentinel binary version (Docker build arg) |
 
 ## Local Development
 
