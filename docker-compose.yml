@@ -1,6 +1,8 @@
 services:
   app:
-    build: .
+    image: ghcr.io/zentinelproxy/zentinel-control-plane:main
+    # To build locally instead, comment out `image` and uncomment:
+    # build: .
     ports:
       - "4000:4000"
     environment:
