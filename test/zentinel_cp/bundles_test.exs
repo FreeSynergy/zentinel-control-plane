@@ -107,9 +107,8 @@ defmodule ZentinelCp.BundlesTest do
       project = project_fixture()
       _bundle = bundle_fixture(%{project: project})
 
-      # Oban inline mode runs the compile worker synchronously,
-      # which changes status from "pending" to "failed" (no zentinel binary in test)
-      bundles = Bundles.list_bundles(project.id, status: "failed")
+      # With manual Oban testing, bundles stay "pending" after creation
+      bundles = Bundles.list_bundles(project.id, status: "pending")
       assert length(bundles) == 1
 
       bundles = Bundles.list_bundles(project.id, status: "compiled")

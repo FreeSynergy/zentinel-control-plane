@@ -25,8 +25,10 @@ config :swoosh, :api_client, false
 # Print only warnings and errors during test
 config :logger, level: :warning
 
-# Disable Oban queues during tests (use Oban.Testing)
-config :zentinel_cp, Oban, testing: :inline
+# Use manual Oban testing mode — jobs are not executed automatically.
+# Tests that need compiled bundles should use compiled_bundle_fixture/1.
+# Tests that need to run workers explicitly can use Oban.drain_queue/1.
+config :zentinel_cp, Oban, testing: :manual
 
 # Mark test environment (used to skip async notifications)
 config :zentinel_cp, :env, :test
