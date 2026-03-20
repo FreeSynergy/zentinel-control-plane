@@ -1,0 +1,129 @@
+name: FSN Build & Publish
+
+# zentinel-control-plane is an Elixir application.
+# Builds a self-contained Mix release for Linux (server use only).
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g. v1.2.3)'
+        required: true
+
+jobs:
+  build:
+    name: Build ${{ matrix.os_label }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            os_label: linux-x86_64
+            archive: zentinel-plane-linux-x86_64.tar.gz
+          - os: ubuntu-24.04-arm
+            os_label: linux-aarch64
+            archive: zentinel-plane-linux-aarch64.tar.gz
+
+    env:
+      MIX_ENV: prod
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: '1.17'
+          otp-version: '27'
+
+      - name: Cache Mix deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: mix-${{ matrix.os_label }}-${{ hashFiles('mix.lock') }}
+
+      - name: Install deps
+        run: mix deps.get --only prod
+
+      - name: Compile
+        run: mix compile
+
+      - name: Build release
+        run: mix release
+
+      - name: Package
+        run: |
+          tar czf ${{ matrix.archive }} -C _build/prod/rel zentinel_control_plane
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.archive }}
+          path: ${{ matrix.archive }}
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Resolve version
+        id: ver
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.version }}"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Generate fsn-package.toml
+        run: |
+          VERSION="${{ steps.ver.outputs.version }}"
+          TAG="${{ steps.ver.outputs.tag }}"
+          REPO="https://github.com/${{ github.repository }}/releases/download/${TAG}"
+          cat > fsn-package.toml << EOF
+          [package]
+          id = "zentinel-plane"
+          name = "Zentinel Control Plane"
+          version = "${VERSION}"
+          category = "server"
+          type = "app"
+          description = "Control plane for Zentinel proxy agents — orchestration and configuration"
+          tags = ["proxy", "orchestration", "control-plane", "zentinel", "gateway"]
+          icon = "zentinel-plane"
+          upstream = "https://github.com/zentinelproxy/zentinel-control-plane"
+
+          [app]
+          binaries = [
+            { os = "linux", arch = "x86_64",  url = "${REPO}/zentinel-plane-linux-x86_64.tar.gz" },
+            { os = "linux", arch = "aarch64", url = "${REPO}/zentinel-plane-linux-aarch64.tar.gz" },
+          ]
+          EOF
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: "Zentinel Control Plane ${{ steps.ver.outputs.tag }}"
+          body: |
+            Self-contained Elixir releases for Linux (x86_64, aarch64).
+            Control plane — upstream: https://github.com/zentinelproxy/zentinel-control-plane
+          files: |
+            artifacts/*
+            fsn-package.toml
